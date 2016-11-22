@@ -404,7 +404,7 @@ namespace System.Management.Automation.Language
                     ParserStrings.NamedBlockNotAllowedInMethod);
             }
 
-            if (functionMemberAst.IsConstructor && functionMemberAst.ReturnType != null)
+            if (functionMemberAst.Parent is TypeDefinitionAst && functionMemberAst.IsConstructor && functionMemberAst.ReturnType != null)
             {
                 _parser.ReportError(functionMemberAst.ReturnType.Extent,
                     nameof(ParserStrings.ConstructorCantHaveReturnType),
