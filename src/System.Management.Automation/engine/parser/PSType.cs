@@ -584,9 +584,9 @@ namespace System.Management.Automation.Language
 
             private PropertyBuilder EmitPropertyIl(PropertyMemberAst propertyMemberAst, Type type)
             {
-                // backing field is always private.
+                // backing field is always private
                 var backingFieldAttributes = FieldAttributes.Private;
-                // The property set and property get methods require a special set of attributes.
+                // The property set and property get methods require a special set of attributes
                 var getSetAttributes = Reflection.MethodAttributes.SpecialName | Reflection.MethodAttributes.HideBySig;
                 getSetAttributes |= propertyMemberAst.IsPublic ? Reflection.MethodAttributes.Public : Reflection.MethodAttributes.Private;
                 if (ShouldImplementProperty(propertyMemberAst.Name, type))
@@ -599,9 +599,12 @@ namespace System.Management.Automation.Language
                     backingFieldAttributes |= FieldAttributes.Static;
                     getSetAttributes |= Reflection.MethodAttributes.Static;
                 }
-                // C# naming convention for backing fields.
-                string backingFieldName = String.Format(CultureInfo.InvariantCulture, "<{0}>k__BackingField", propertyMemberAst.Name);
-                var backingField = _typeBuilder.DefineField(backingFieldName, type, backingFieldAttributes);
+
+                string backingFieldName = null;
+                FieldBuilder backingField = null;
+                // C# naming convention for backing fields
+                backingFieldName = String.Format(CultureInfo.InvariantCulture, "<{0}>k__BackingField", propertyMemberAst.Name);
+                backingField = _typeBuilder.DefineField(backingFieldName, type, backingFieldAttributes);
 
                 bool hasValidateAttributes = false;
                 if (propertyMemberAst.Attributes != null)
@@ -617,59 +620,167 @@ namespace System.Management.Automation.Language
                     }
                 }
 
-                // The last argument of DefineProperty is null, because the property has no parameters.
+                // The last argument of DefineProperty is null, because the property has no parameters
                 PropertyBuilder property = _typeBuilder.DefineProperty(propertyMemberAst.Name, Reflection.PropertyAttributes.None, type, null);
 
-                // Define the "get" accessor method.
-                MethodBuilder getMethod = _typeBuilder.DefineMethod(String.Concat("get_", propertyMemberAst.Name), getSetAttributes, type, Type.EmptyTypes);
-                ILGenerator getIlGen = getMethod.GetILGenerator();
-                if (propertyMemberAst.IsStatic)
-                {
-                    // static
-                    getIlGen.Emit(OpCodes.Ldsfld, backingField);
-                    getIlGen.Emit(OpCodes.Ret);
-                }
-                else
-                {
-                    // instance
-                    getIlGen.Emit(OpCodes.Ldarg_0);
-                    getIlGen.Emit(OpCodes.Ldfld, backingField);
-                    getIlGen.Emit(OpCodes.Ret);
-                }
+                MethodBuilder getMethod;
+                MethodBuilder getMethodInternal;
+                ILGenerator getIlGen;
+                ILGenerator getIlGenInternal;
 
-                // Define the "set" accessor method.
-                MethodBuilder setMethod = _typeBuilder.DefineMethod(String.Concat("set_", propertyMemberAst.Name), getSetAttributes, null, new Type[] { type });
-                ILGenerator setIlGen = setMethod.GetILGenerator();
+                MethodBuilder setMethod;
+                MethodBuilder setMethodInternal;
+                ILGenerator setIlGen;
+                ILGenerator setIlGenInternal;
 
-                if (hasValidateAttributes)
+                String getMethodName = String.Concat("get_", propertyMemberAst.Name);
+                String getMethodNameInternal = String.Concat("geti_", propertyMemberAst.Name);
+                String setMethodName = String.Concat("set_", propertyMemberAst.Name);
+                String setMethodNameInternal = String.Concat("seti_", propertyMemberAst.Name);
+
+                if (propertyMemberAst.GetAccessorDefinition == null)
                 {
-                    Type typeToLoad = _typeBuilder;
-                    setIlGen.Emit(OpCodes.Ldtoken, typeToLoad);
-                    setIlGen.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle")); // load current Type on stack
-                    setIlGen.Emit(OpCodes.Ldstr, propertyMemberAst.Name); // load name of Property
-                    setIlGen.Emit(propertyMemberAst.IsStatic ? OpCodes.Ldarg_0 : OpCodes.Ldarg_1); // load set value
-                    if (type.IsValueType)
+                    // Auto implemented property hasn't explicit accessor methods. So generate them.
+
+                    // Define the 'Get' accessor method
+                    getMethod = _typeBuilder.DefineMethod(getMethodName, getSetAttributes, type, Type.EmptyTypes);
+                    getIlGen = getMethod.GetILGenerator();
+                    if (propertyMemberAst.IsStatic)
                     {
-                        setIlGen.Emit(OpCodes.Box, type);
+                        // static
+                        getIlGen.Emit(OpCodes.Ldsfld, backingField);
+                        getIlGen.Emit(OpCodes.Ret);
                     }
-                    setIlGen.Emit(OpCodes.Call, CachedReflectionInfo.ClassOps_ValidateSetProperty);
-                }
-
-                if (propertyMemberAst.IsStatic)
-                {
-                    setIlGen.Emit(OpCodes.Ldarg_0);
-                    setIlGen.Emit(OpCodes.Stsfld, backingField);
+                    else
+                    {
+                        // instance
+                        EmitLdarg(getIlGen, 0);                            // pass 'this'
+                        getIlGen.Emit(OpCodes.Ldfld, backingField);
+                        getIlGen.Emit(OpCodes.Ret);
+                    }
                 }
                 else
                 {
-                    setIlGen.Emit(OpCodes.Ldarg_0);
-                    setIlGen.Emit(OpCodes.Ldarg_1);
-                    setIlGen.Emit(OpCodes.Stfld, backingField);
+                    // Custom script is compiled in the internal 'Get' method
+                    // Make the internal method hidden
+                    getMethodInternal = _typeBuilder.DefineMethod(getMethodNameInternal, getSetAttributes, type, new Type[] { type });
+                    // Remove? Should we set Custom Attributes only on wrapper 'Get' method?
+                    DefineCustomAttributes(getMethodInternal, null, _parser, AttributeTargets.Method);
+                    getIlGenInternal = getMethodInternal.GetILGenerator();
+                    getMethodInternal.SetCustomAttribute(s_hiddenCustomAttributeBuilder);
+
+                    // In future for parameterized property we should add types
+                    DefineMethodBody(propertyMemberAst.GetAccessorDefinition, getIlGenInternal, GetMetaDataName(getMethodNameInternal, 0), propertyMemberAst.IsStatic, new Type[] { type }, type,
+                       (i, n) => getMethodInternal.DefineParameter(i, ParameterAttributes.None, n));
+
+                    // Define the public 'Get' accessor method - it is wrapper for 'getMethodInternal'
+                    // Send 'backingField' parameter as '$PSItem' in 'getMethodInternal'
+                    getMethod = _typeBuilder.DefineMethod(getMethodName, getSetAttributes, type, Type.EmptyTypes);
+
+                    DefineCustomAttributes(getMethod, null, _parser, AttributeTargets.Method);
+
+                    getIlGen = getMethod.GetILGenerator();
+
+                    if (propertyMemberAst.IsStatic)
+                    {
+                        // static
+                        getIlGen.Emit(OpCodes.Ldsfld, backingField);
+                    }
+                    else
+                    {
+                        // instance
+                        EmitLdarg(getIlGen, 0);                            // pass 'this' for 'getMethodInternal'
+                        EmitLdarg(getIlGen, 0);                            // pass 'this' to load 'backingField' -> $PSItem
+                        getIlGen.Emit(OpCodes.Ldfld, backingField);
+                    }
+                    getIlGen.Emit(propertyMemberAst.IsStatic ? OpCodes.Call : OpCodes.Call, getMethodInternal);
+                    getIlGen.Emit(OpCodes.Ret);
                 }
-                setIlGen.Emit(OpCodes.Ret);
+
+                if (propertyMemberAst.SetAccessorDefinition == null)
+                {
+                    // Auto implemented property hasn't explicit accessor methods. So generate them.
+
+                    // Define the 'Set' accessor method
+                    setMethod = _typeBuilder.DefineMethod(setMethodName, getSetAttributes, null, new Type[] { type });
+
+                    DefineCustomAttributes(setMethod, null, _parser, AttributeTargets.Method);
+
+                    setIlGen = setMethod.GetILGenerator();
+
+                    if (hasValidateAttributes)
+                    {
+                        EmitValidateAttributesIl(setIlGen, propertyMemberAst, type);
+                    }
+
+                    if (propertyMemberAst.IsStatic)
+                    {
+                        EmitLdarg(setIlGen, 0);                        // pass 'this'
+                        setIlGen.Emit(OpCodes.Stsfld, backingField);
+                    }
+                    else
+                    {
+                        EmitLdarg(setIlGen, 0);                        // pass 'this'
+                        EmitLdarg(setIlGen, 1);                        // load 'backingField'
+                        setIlGen.Emit(OpCodes.Stfld, backingField);
+                    }
+                    setIlGen.Emit(OpCodes.Ret);
+                }
+                else
+                {
+                    // Custom script is compiled in the internal 'Set' method
+                    // Make the internal method hidden
+                    setMethodInternal = _typeBuilder.DefineMethod(setMethodNameInternal, getSetAttributes, type, new Type[] { type });
+                    // Remove? Should we set Custom Attributes only on wrapper 'Set' method?
+                    DefineCustomAttributes(setMethodInternal, null, _parser, AttributeTargets.Method);
+                    setIlGenInternal = setMethodInternal.GetILGenerator();
+                    setMethodInternal.SetCustomAttribute(s_hiddenCustomAttributeBuilder);
+
+                    // In future for parameterized property we should add types
+                    DefineMethodBody(propertyMemberAst.SetAccessorDefinition, setIlGenInternal, GetMetaDataName(setMethodNameInternal, 0), propertyMemberAst.IsStatic, new Type[] { type }, type,
+                        (i, n) => setMethodInternal.DefineParameter(i, ParameterAttributes.None, n));
+
+                    // Define the public 'Set' accessor method - it is wrapper for 'setMethodInternal'
+                    // Send 'rVal' parameter as '$PSItem' in 'setMethodInternal'
+                    setMethod = _typeBuilder.DefineMethod(setMethodName, getSetAttributes, null, new Type[] { type });
+
+                    DefineCustomAttributes(setMethod, null, _parser, AttributeTargets.Method);
+
+                    setIlGen = setMethod.GetILGenerator();
+                    if (hasValidateAttributes)
+                    {
+                        EmitValidateAttributesIl(setIlGen, propertyMemberAst, type);
+                    }
+
+                    if (propertyMemberAst.IsStatic)
+                    {
+                        // static
+                        EmitLdarg(setIlGen, 0);                     // pass '$PSItem'
+                    }
+                    else
+                    {
+                        // instance
+                        EmitLdarg(setIlGen, 0);                     // pass 'this' to get later a return value from setMethodInternal
+                        EmitLdarg(setIlGen, 0);                     // pass 'this' to send parameter in 'setMethodInternal'
+                        EmitLdarg(setIlGen, 1);                     // pass '$PSItem'
+                    }
+                    setIlGen.Emit(propertyMemberAst.IsStatic ? OpCodes.Call : OpCodes.Callvirt, setMethodInternal);
+
+                    // 'setMethodInternal' return a value - put it in 'backingField'
+                    if (propertyMemberAst.IsStatic)
+                    {
+                        setIlGen.Emit(OpCodes.Stsfld, backingField);
+                    }
+                    else
+                    {
+                        // 'this' already is in stack
+                        setIlGen.Emit(OpCodes.Stfld, backingField);
+                    }
+                    setIlGen.Emit(OpCodes.Ret);
+                }
 
                 // Map the two methods created above to our PropertyBuilder to
-                // their corresponding behaviors, "get" and "set" respectively.
+                // their corresponding behaviors, 'get' and 'set' respectively
                 property.SetGetMethod(getMethod);
                 property.SetSetMethod(setMethod);
 
@@ -681,6 +792,19 @@ namespace System.Management.Automation.Language
                 return property;
             }
 
+            private void EmitValidateAttributesIl(ILGenerator setIlGen, PropertyMemberAst propertyMemberAst, Type type)
+            {
+                    Type typeToLoad = _typeBuilder;
+                    setIlGen.Emit(OpCodes.Ldtoken, typeToLoad);
+                    setIlGen.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle")); // load current Type on stack
+                    setIlGen.Emit(OpCodes.Ldstr, propertyMemberAst.Name); // load name of Property
+                    EmitLdarg(setIlGen, propertyMemberAst.IsStatic ? /* static */ 0 : /* instance */ 1); // load 'set' value
+                    if (type.GetTypeInfo().IsValueType)
+                    {
+                        setIlGen.Emit(OpCodes.Box, type);
+                    }
+                    setIlGen.Emit(OpCodes.Call, CachedReflectionInfo.ClassOps_ValidateSetProperty);
+            }
             private bool CheckForDuplicateOverload(FunctionMemberAst functionMemberAst, Type[] newParameters)
             {
                 List<Tuple<FunctionMemberAst, Type[]>> overloads;

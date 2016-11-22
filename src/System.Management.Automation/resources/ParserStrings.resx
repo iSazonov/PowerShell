@@ -1493,5 +1493,28 @@ ModuleVersion : Version of module to import. If used, ModuleName must represent 
   </data>
   <data name = "CantInvokeCallOperatorAcrossLanguageBoundaries" xml:space="preserve">
     <value>Cannot use '&amp;' or '.' operators to invoke a module scope command across language boundaries.</value>
+  <data name="ClassPropertyTerminatorNotFound" xml:space="preserve">
+    <value>Missing '=' or ';' or end-of-line in property definition.</value>
+  </data>
+  <data name="ClassPropertyAccessorNameNotFound" xml:space="preserve">
+    <value>Missing class property accessor 'Get' or 'Set' name. Both accessors must be present.</value>
+  </data>
+  <data name="ClassPropertyAccessorParamBlockFound" xml:space="preserve">
+    <value>Accessor cannot have a param block.</value>
+  </data>
+  <data name="ClassPropertyAccessorDublicateName" xml:space="preserve">
+    <value>Duplicating class property '{0}' accessor.</value>
+  </data>
+  <data name="ClassPropertyAccessorBodyNotFound" xml:space="preserve">
+    <value>Accessor must have a body.</value>
+  </data>
+  <data name="ClassMethodBodyNotFound" xml:space="preserve">
+    <value>Missing class method body. Use format: {0}() {{ ... }}.</value>
+  </data>
+  <data name="ClassAccessorTerminatorNotFound" xml:space="preserve">
+    <value>Missing ';' or end-of-line in accessor definition.</value>
+  </data>
+  <data name="ClassAccessorParametersListFound" xml:space="preserve">
+    <value>Class property accessor cannot have a parameters list.</value>
   </data>
 </root>

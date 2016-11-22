@@ -139,12 +139,12 @@ Describe 'Classes inheritance syntax errors' -Tags "CI" {
     ShouldBeParseError "class A {}; class B : A, NonExistingInterface {}" TypeNotFound 25
 
     # base should be accepted only on instance ctors
-    ShouldBeParseError 'class A { A($a){} } ; class B : A { foo() : base(1) {} }' MissingFunctionBody 41
-    ShouldBeParseError 'class A { static A() {} }; class B { static B() : base() {} }' MissingFunctionBody 47
+    ShouldBeParseError 'class A { A($a){} } ; class B : A { foo() : base(1) {} }' ClassMethodBodyNotFound 41 
+    ShouldBeParseError 'class A { static A() {} }; class B { static B() : base() {} }' ClassMethodBodyNotFound 47
 
     # Incomplete input
     ShouldBeParseError 'class A { A($a){} } ; class B : A { B() : bas {} }' MissingBaseCtorCall 41
-    ShouldBeParseError 'class A { A($a){} } ; class B : A { B() : base( {} }' @('MissingEndParenthesisInMethodCall', 'MissingFunctionBody') @(50, 39)
+    ShouldBeParseError 'class A { A($a){} } ; class B : A { B() : base( {} }' @('MissingEndParenthesisInMethodCall', 'ClassMethodBodyNotFound') @(50, 39)
     ShouldBeParseError 'class A { A($a){} } ; class B : A { B() : base {} }' @('MissingMethodParameterList', 'UnexpectedToken') @(46, 50)
 
     # Sealed base

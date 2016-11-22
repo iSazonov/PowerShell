@@ -2977,7 +2977,9 @@ namespace System.Management.Automation.Language
         /// <param name="attributes">The custom attributes for the property.</param>
         /// <param name="propertyAttributes">The attributes (like public or static) for the property.</param>
         /// <param name="initialValue">The initial value of the property (may be null).</param>
-        public PropertyMemberAst(IScriptExtent extent, string name, TypeConstraintAst propertyType, IEnumerable<AttributeAst> attributes, PropertyAttributes propertyAttributes, ExpressionAst initialValue)
+        /// <param name="getAccessorDefinition">The initial value of the property (may be null).</param>
+        /// <param name="setAccessorDefinition">The initial value of the property (may be null).</param>
+        public PropertyMemberAst(IScriptExtent extent, string name, TypeConstraintAst propertyType, IEnumerable<AttributeAst> attributes, PropertyAttributes propertyAttributes, ExpressionAst initialValue, FunctionDefinitionAst getAccessorDefinition, FunctionDefinitionAst setAccessorDefinition)
             : base(extent)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -3014,6 +3016,9 @@ namespace System.Management.Automation.Language
             {
                 SetParent(InitialValue);
             }
+
+            GetAccessorDefinition = getAccessorDefinition;
+            SetAccessorDefinition = setAccessorDefinition;
         }
 
         /// <summary>
@@ -3040,6 +3045,16 @@ namespace System.Management.Automation.Language
         /// The ast for the initial value of the property.  This property may be null if no initial value was specified.
         /// </summary>
         public ExpressionAst InitialValue { get; private set; }
+
+        /// <summary>
+        /// The ast for the 'Get' accessor of the property.  It is null for auto implemented property.
+        /// </summary>
+        public FunctionDefinitionAst GetAccessorDefinition { get; private set; }
+
+        /// <summary>
+        /// The ast for the 'Set' accessor of the property.  It is null for auto implemented property.
+        /// </summary>
+        public FunctionDefinitionAst SetAccessorDefinition { get; private set; }
 
         /// <summary>
         /// Return true if the property is public.
@@ -3069,7 +3084,9 @@ namespace System.Management.Automation.Language
             var newPropertyType = CopyElement(PropertyType);
             var newAttributes = CopyElements(Attributes);
             var newInitialValue = CopyElement(InitialValue);
-            return new PropertyMemberAst(Extent, Name, newPropertyType, newAttributes, PropertyAttributes, newInitialValue);
+            var newGetAccessorDefinition = CopyElement(GetAccessorDefinition);
+            var newSetAccessorDefinition = CopyElement(SetAccessorDefinition);
+            return new PropertyMemberAst(Extent, Name, newPropertyType, newAttributes, PropertyAttributes, newInitialValue, newGetAccessorDefinition, newSetAccessorDefinition);
         }
 
         internal override string GetTooltip()
