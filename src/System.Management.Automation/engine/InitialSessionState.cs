@@ -4621,6 +4621,7 @@ end {
                     new SessionStateAliasEntry("ghy", "Get-History", string.Empty, ReadOnly),
                     new SessionStateAliasEntry("gi", "Get-Item", string.Empty, ReadOnly),
                     new SessionStateAliasEntry("gl", "Get-Location", string.Empty, ReadOnly),
+                    new SessionStateAliasEntry("Get-FileHash", "Get-Hash", string.Empty, ReadOnly),
                     new SessionStateAliasEntry("gm", "Get-Member", string.Empty, ReadOnly),
                     new SessionStateAliasEntry("gmo", "Get-Module", string.Empty, ReadOnly),
                     new SessionStateAliasEntry("gp", "Get-ItemProperty", string.Empty, ReadOnly),
@@ -4663,8 +4664,8 @@ end {
                     new SessionStateAliasEntry("saps", "Start-Process", string.Empty, ReadOnly),
                     new SessionStateAliasEntry("spps", "Stop-Process", string.Empty, ReadOnly),
                     new SessionStateAliasEntry("sv", "Set-Variable", string.Empty, ReadOnly),
-                    // Web cmdlets aliases
-                    new SessionStateAliasEntry("irm", "Invoke-RestMethod", string.Empty, ReadOnly),
+                  // Web cmdlets aliases
+                  new SessionStateAliasEntry("irm", "Invoke-RestMethod", string.Empty, ReadOnly),
                     new SessionStateAliasEntry("iwr", "Invoke-WebRequest", string.Empty, ReadOnly),
 // Porting note: #if !UNIX is used to disable aliases for cmdlets which conflict with Linux / macOS
 #if !UNIX
