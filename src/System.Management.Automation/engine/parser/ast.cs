@@ -3130,6 +3130,12 @@ namespace System.Management.Automation.Language
 
                 if (action == AstVisitAction.Continue && InitialValue != null)
                     action = InitialValue.InternalVisit(visitor);
+
+                if (action == AstVisitAction.Continue && GetAccessorDefinition != null)
+                    action = GetAccessorDefinition.InternalVisit(visitor);
+
+                if (action == AstVisitAction.Continue && SetAccessorDefinition != null)
+                    action = SetAccessorDefinition.InternalVisit(visitor);
             }
 
             return visitor.CheckForPostAction(this, action);
