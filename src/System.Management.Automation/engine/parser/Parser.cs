@@ -3954,7 +3954,7 @@ namespace System.Management.Automation.Language
             //G      property-member ';':opt
             //G
             //G  method-member:
-            //G      member-attribute-list:opt function-statement
+            //G      member-attribute-list:opt  function-statement
             //G
             //G  property-member:
             //G      member-attribute-list:opt  variable
@@ -3984,7 +3984,7 @@ namespace System.Management.Automation.Language
             //G      custom-attribute
             //G      'Static'
             //G      'Hidden'
-            //G      'Private'
+            //G      'Private' | 'Public'
 
             IScriptExtent startExtent = null;
             IScriptExtent endErrorStatement = null;
