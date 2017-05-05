@@ -4113,8 +4113,8 @@ namespace System.Management.Automation.Language
                 SkipToken();
                 token = PeekToken();
 
-                FunctionDefinitionAst getaccessorDefinition = null; 
-                FunctionDefinitionAst setaccessorDefinition = null; 
+                FunctionMemberAst getaccessorDefinition = null; 
+                FunctionMemberAst setaccessorDefinition = null; 
                 // 'Get' and 'Set' accessors can appear in any order
                 FunctionDefinitionAst accessorDefinition1 = null; 
                 FunctionDefinitionAst accessorDefinition2 = null; 
@@ -4170,15 +4170,15 @@ namespace System.Management.Automation.Language
                         endErrorStatement = accessorDefinition1.Extent;
                         ReportIncompleteInput(accessorDefinition1.Body.ParamBlock.Extent, () => ParserStrings.ClassPropertyAccessorParamBlockFound);
                     }
-                    if (getaccessor1)
+                    if (getaccessor1 && accessorDefinition1 != null)
                     {
-                        getaccessorDefinition = accessorDefinition1;
+                        getaccessorDefinition = new FunctionMemberAst(ExtentOf(getset1, accessorDefinition1), accessorDefinition1, typeConstraint.Copy() as TypeConstraintAst, null, MethodAttributes.Public);
                     }
                     else
                     {
-                        if (setaccessor1)
+                        if (setaccessor1 && accessorDefinition1 != null)
                         {
-                            setaccessorDefinition = accessorDefinition1;
+                            setaccessorDefinition = new FunctionMemberAst(ExtentOf(getset1, accessorDefinition1), accessorDefinition1, typeConstraint.Copy() as TypeConstraintAst, null, MethodAttributes.Public);
                         }
                     }
                     SkipNewlinesAndSemicolons();
@@ -4225,15 +4225,15 @@ namespace System.Management.Automation.Language
                         endErrorStatement = accessorDefinition2.Extent;
                         ReportIncompleteInput(accessorDefinition2.Body.ParamBlock.Extent, () => ParserStrings.ClassPropertyAccessorParamBlockFound);
                     }
-                    if (getaccessor2)
+                    if (getaccessor2 && accessorDefinition2 != null)
                     {
-                        getaccessorDefinition = accessorDefinition2;
+                        getaccessorDefinition = new FunctionMemberAst(ExtentOf(getset2, accessorDefinition2), accessorDefinition2, typeConstraint.Copy() as TypeConstraintAst, null, MethodAttributes.Public);
                     }
                     else
                     {
-                        if (setaccessor2)
+                        if (setaccessor2 && accessorDefinition2 != null)
                         {
-                            setaccessorDefinition = accessorDefinition2;
+                            setaccessorDefinition = new FunctionMemberAst(ExtentOf(getset2, accessorDefinition2), accessorDefinition2, typeConstraint.Copy() as TypeConstraintAst, null, MethodAttributes.Public);
                         }
                     }
 

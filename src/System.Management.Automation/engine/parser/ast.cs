@@ -2923,7 +2923,7 @@ namespace System.Management.Automation.Language
         /// <param name="initialValue">The initial value of the property (may be null).</param>
         /// <param name="getAccessorDefinition">The initial value of the property (may be null).</param>
         /// <param name="setAccessorDefinition">The initial value of the property (may be null).</param>
-        public PropertyMemberAst(IScriptExtent extent, string name, TypeConstraintAst propertyType, IEnumerable<AttributeAst> attributes, PropertyAttributes propertyAttributes, ExpressionAst initialValue, FunctionDefinitionAst getAccessorDefinition, FunctionDefinitionAst setAccessorDefinition)
+        public PropertyMemberAst(IScriptExtent extent, string name, TypeConstraintAst propertyType, IEnumerable<AttributeAst> attributes, PropertyAttributes propertyAttributes, ExpressionAst initialValue, FunctionMemberAst getAccessorDefinition, FunctionMemberAst setAccessorDefinition)
             : base(extent)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -2961,8 +2961,17 @@ namespace System.Management.Automation.Language
                 SetParent(InitialValue);
             }
 
-            GetAccessorDefinition = getAccessorDefinition;
-            SetAccessorDefinition = setAccessorDefinition;
+            if (getAccessorDefinition != null)
+            {
+                GetAccessorDefinition = getAccessorDefinition;
+                SetParent(GetAccessorDefinition);
+            }
+
+            if (setAccessorDefinition != null)
+            {
+                SetAccessorDefinition = setAccessorDefinition;
+                SetParent(SetAccessorDefinition);
+            }
         }
 
         /// <summary>
@@ -2993,12 +3002,12 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The ast for the 'Get' accessor of the property.  It is null for auto implemented property.
         /// </summary>
-        public FunctionDefinitionAst GetAccessorDefinition { get; private set; }
+        public FunctionMemberAst GetAccessorDefinition { get; private set; }
 
         /// <summary>
         /// The ast for the 'Set' accessor of the property.  It is null for auto implemented property.
         /// </summary>
-        public FunctionDefinitionAst SetAccessorDefinition { get; private set; }
+        public FunctionMemberAst SetAccessorDefinition { get; private set; }
 
         /// <summary>
         /// Return true if the property is public.
