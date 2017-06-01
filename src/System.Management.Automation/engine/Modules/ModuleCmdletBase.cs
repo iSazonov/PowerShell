@@ -7409,7 +7409,8 @@ namespace Microsoft.PowerShell.Commands
                     var prefixedAlias = new AliasInfo(
                         prefixedAliasName,
                         prefixedAliasDefinition,
-                        cmdlet.Context);
+                        cmdlet.Context,
+                        aliasToImport.Options);
                     SetCommandVisibility(isImportModulePrivate, prefixedAlias);
                     prefixedAlias.Module = sourceModule;
                     if (usePrefix)
@@ -7498,7 +7499,8 @@ namespace Microsoft.PowerShell.Commands
                         AliasInfo prefixedAlias = new AliasInfo(
                             prefixedAliasName,
                             prefixedAliasDefinition,
-                            cmdlet.Context);
+                            cmdlet.Context,
+                            ai.Options);
                         SetCommandVisibility(isImportModulePrivate, prefixedAlias);
                         prefixedAlias.Module = sourceModule;
 

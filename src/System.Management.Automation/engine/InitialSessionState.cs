@@ -5287,6 +5287,7 @@ if($paths) {
                     var aliasAttribute = GetCustomAttribute<AliasAttribute>(typeInfo);
                     if (aliasAttribute != null)
                     {
+                        var aliasOptions = aliasAttribute.aliasOptions;
                         if (aliases == null)
                         {
                             aliases = new Dictionary<string, List<SessionStateAliasEntry>>(StringComparer.OrdinalIgnoreCase);
@@ -5295,11 +5296,11 @@ if($paths) {
                         var aliasList = new List<SessionStateAliasEntry>();
                         foreach (var alias in aliasAttribute.AliasNames)
                         {
-                            // Alias declared by AliasAttribute is set with the option 'ScopedItemOptions.None',
-                            // because we believe a user of the cmdlet, instead of the author of it,
-                            // should be the one to decide the option
-                            // ('ScopedItemOptions.ReadOnly' and/or 'ScopedItemOptions.AllScopes') of the alias usage."
-                            var aliasEntry = new SessionStateAliasEntry(alias, cmdletName, "", ScopedItemOptions.None);
+                            // By default an alias declared by AliasAttribute is set with the option 'ScopedItemOptions.None',
+                            // becaouse we believe a user of the cmdlet, instead of the author of it,
+                            // should be the one to decide the option of the alias usage.
+                            // Here we allow to set 'ScopedItemOptions.ReadOnly' option for cmdlets from only core modules.
+                            var aliasEntry = new SessionStateAliasEntry(alias, cmdletName, "", aliasOptions);
                             if (psSnapInInfo != null)
                             {
                                 aliasEntry.SetPSSnapIn(psSnapInInfo);

@@ -576,6 +576,7 @@ namespace System.Management.Automation
     public sealed class AliasAttribute : ParsingBaseAttribute
     {
         internal string[] aliasNames;
+        internal ScopedItemOptions aliasOptions = ScopedItemOptions.None;
 
         /// <summary>
         /// Gets the alias names passed to the constructor
@@ -601,6 +602,24 @@ namespace System.Management.Automation
             }
 
             this.aliasNames = aliasNames;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the AliasAttribute class with explicit ScopedItemOptions.
+        /// </summary>
+        /// <param name="aliasOptions">Set of ScopedItemOptions</param>
+        /// <param name="aliasNames">The name for this alias</param>
+        /// <exception cref="ArgumentException">for invalid arguments</exception>
+        internal AliasAttribute(ScopedItemOptions aliasOptions, params string[] aliasNames) : this(aliasNames)
+        {
+            if (aliasOptions != ScopedItemOptions.None)
+            {
+                if ((aliasOptions & ScopedItemOptions.ReadOnly) == 0)
+                {
+                    throw PSTraceSource.NewArgumentException("aliasOptions");
+                }
+            }
+            this.aliasOptions = aliasOptions;
         }
     }
 
