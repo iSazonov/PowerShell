@@ -73,6 +73,7 @@ Describe "Verify approved aliases list" -Tags "CI" {
 "Alias",        "gcm",                              "Get-Command",                      $($FullCLR -or $CoreWindows -or $CoreUnix),     "ReadOnly",             "",                     ""
 "Alias",        "gcs",                              "Get-PSCallStack",                  $($FullCLR -or $CoreWindows -or $CoreUnix),     "ReadOnly",             "",                     ""
 "Alias",        "gdr",                              "Get-PSDrive",                      $($FullCLR -or $CoreWindows -or $CoreUnix),     "ReadOnly",             "",                     ""
+"Alias",        "Get-FileHash",                     "Get-Hash",                         $(             $CoreWindows -or $CoreUnix),   "ReadOnly",         "AllScope"
 "Alias",        "gerr",                             "Get-Error",                        $(             $CoreWindows -or $CoreUnix),     "ReadOnly",             "",                     ""
 "Alias",        "ghy",                              "Get-History",                      $($FullCLR -or $CoreWindows -or $CoreUnix),     "ReadOnly",             "",                     ""
 "Alias",        "gi",                               "Get-Item",                         $($FullCLR -or $CoreWindows -or $CoreUnix),     "ReadOnly",             "",                     ""
@@ -276,7 +277,7 @@ Describe "Verify approved aliases list" -Tags "CI" {
 "Cmdlet",       "Get-EventSubscriber",              "",                                 $($FullCLR -or $CoreWindows -or $CoreUnix),     "",                     "",                     "None"
 "Cmdlet",       "Get-ExecutionPolicy",              "",                                 $($FullCLR -or $CoreWindows -or $CoreUnix),     "",                     "",                     "None"
 "Cmdlet",       "Get-ExperimentalFeature",          "",                                 $(             $CoreWindows -or $CoreUnix),     "",                     "",                     "None"
-"Cmdlet",       "Get-FileHash",                     "",                                 $(             $CoreWindows -or $CoreUnix),     "",                     "",                     "None"
+"Cmdlet",       "Get-Hash",                         "",                                 $(             $CoreWindows -or $CoreUnix)
 "Cmdlet",       "Get-FormatData",                   "",                                 $($FullCLR -or $CoreWindows -or $CoreUnix),     "",                     "",                     "None"
 "Cmdlet",       "Get-Help",                         "",                                 $($FullCLR -or $CoreWindows -or $CoreUnix),     "",                     "",                     "None"
 "Cmdlet",       "Get-History",                      "",                                 $($FullCLR -or $CoreWindows -or $CoreUnix),     "",                     "",                     "None"
