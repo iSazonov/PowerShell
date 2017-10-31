@@ -5297,7 +5297,7 @@ if($paths) {
                         foreach (var alias in aliasAttribute.AliasNames)
                         {
                             // By default an alias declared by AliasAttribute is set with the option 'ScopedItemOptions.None',
-                            // becaouse we believe a user of the cmdlet, instead of the author of it,
+                            // because we believe a user of the cmdlet, instead of the author of it,
                             // should be the one to decide the option of the alias usage.
                             // Here we allow to set 'ScopedItemOptions.ReadOnly' option for cmdlets from only core modules.
                             var aliasEntry = new SessionStateAliasEntry(alias, cmdletName, "", aliasOptions);
