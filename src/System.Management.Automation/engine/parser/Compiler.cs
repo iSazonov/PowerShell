@@ -1289,16 +1289,44 @@ namespace System.Management.Automation.Language
 
         private static Attribute NewAliasAttribute(AttributeAst ast)
         {
+            int scopedItemOption = 0;
+
             CheckNoNamedArgs(ast);
+
+            // '[Alias([System.Management.Automation.ScopedItemOptions]::ReadOnly, "AliasName1")]' is supported in scripts.
+            if (ast.PositionalArguments.Count > 1
+                && ast.PositionalArguments[0] is MemberExpressionAst aliasOptionMemberAst)
+            {
+                if (aliasOptionMemberAst.Expression is TypeExpressionAst aliasOptionAst
+                    && aliasOptionAst.TypeName.FullName.Equals(typeof(ScopedItemOptions).FullName))
+                {
+                    var optionValue = aliasOptionMemberAst.Member.ToString();
+                    if (!Enum.TryParse<ScopedItemOptions>(value: optionValue, ignoreCase: true, result: out ScopedItemOptions res) && res != ScopedItemOptions.ReadOnly)
+                    {
+                        throw InterpreterError.NewInterpreterException(ast, typeof(RuntimeException), aliasOptionMemberAst.Member.Extent,
+                            "TypeNotFound", ParserStrings.TypeNotFound, aliasOptionAst.TypeName.FullName, typeof(System.Management.Automation.ScopedItemOptions).FullName);
+                    }
+                    scopedItemOption = 1;
+                }
+            }
 
             var cvv = new ConstantValueVisitor { AttributeArgument = true };
             var args = new string[ast.PositionalArguments.Count];
-            for (int i = 0; i < ast.PositionalArguments.Count; i++)
+            for (int i = 0; i < (ast.PositionalArguments.Count - scopedItemOption); i++)
             {
                 args[i] = _attrArgToStringConverter.Target(_attrArgToStringConverter,
-                    ast.PositionalArguments[i].Accept(cvv));
+                    ast.PositionalArguments[i + scopedItemOption].Accept(cvv));
             }
-            return new AliasAttribute(args);
+
+            if (scopedItemOption == 0)
+            {
+                return new AliasAttribute(args);
+            }
+            else
+            {
+                return new AliasAttribute(ScopedItemOptions.ReadOnly, args);
+            }
+
         }
 
         private static Attribute NewValidateSetAttribute(AttributeAst ast)

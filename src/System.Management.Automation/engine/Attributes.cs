@@ -610,7 +610,7 @@ namespace System.Management.Automation
         /// <param name="aliasOptions">Set of ScopedItemOptions</param>
         /// <param name="aliasNames">The name for this alias</param>
         /// <exception cref="ArgumentException">for invalid arguments</exception>
-        internal AliasAttribute(ScopedItemOptions aliasOptions, params string[] aliasNames) : this(aliasNames)
+        public AliasAttribute(ScopedItemOptions aliasOptions, params string[] aliasNames) : this(aliasNames)
         {
             if (aliasOptions != ScopedItemOptions.None)
             {

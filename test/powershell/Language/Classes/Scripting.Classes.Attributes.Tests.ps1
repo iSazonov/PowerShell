@@ -482,3 +482,109 @@ Describe 'ValidateSet support a dynamically generated set' -Tag "CI" {
         }
     }
 }
+
+Describe 'ValidateSet support a dynamically generated set' -Tag "CI" {
+
+    Context 'C# tests' {
+
+        BeforeAll {
+            $source=@'
+        using System;
+        using System.Management.Automation;
+
+        namespace Test.Language {
+
+            [Cmdlet(VerbsCommon.Get, "TestValidateSet0")]
+            [Alias("TestAliasName0")]
+            public class TestValidateSetCommand0 : PSCmdlet
+            {
+                [Parameter]
+                [ValidateSet(typeof(PSCmdlet))]
+                public string Param1;
+
+                protected override void EndProcessing()
+                {
+                    WriteObject(Param1);
+                }
+            }
+
+            [Cmdlet(VerbsCommon.Get, "TestValidateSet1")]
+            [Alias(ScopedItemOptions.ReadOnly, "TestAliasName1")]
+            public class TestValidateSetCommand0 : PSCmdlet
+            {
+                [Parameter]
+                [ValidateSet(typeof(PSCmdlet))]
+                public string Param1;
+
+                protected override void EndProcessing()
+                {
+                    WriteObject(Param1);
+                }
+            }
+        }
+'@
+
+            $cls = Add-Type -TypeDefinition $source -PassThru | Select-Object -First 1
+            $testModule = Import-Module $cls.Assembly -PassThru
+        }
+
+        AfterAll {
+            Remove-Module -ModuleInfo $testModule
+        }
+
+        It 'Can assign a non-readonly alias for the C# cmdlet' {
+            Get-Alias "TestAliasName0" -ErrorAction SilentlyContinue | Should Not BeNullOrEmpty
+            Remove-Item Alias:/TestAliasName0 -ErrorAction SilentlyContinue
+            Get-Alias "TestAliasName0" -ErrorAction SilentlyContinue | Should BeNullOrEmpty
+        }
+
+        It 'Can assign a readonly alias for the C# cmdlet' {
+            Get-Alias "TestAliasName1" -ErrorAction SilentlyContinue | Should Not BeNullOrEmpty
+            Remove-AliasRemove-Item Alias:/TestAliasName1 -ErrorAction SilentlyContinue
+            Get-Alias "TestAliasName1" -ErrorAction SilentlyContinue | Should Not BeNullOrEmpty
+        }
+    }
+
+    Context 'Powershell tests' {
+
+        BeforeAll {
+            function Get-TestAlias0
+            {
+                [CmdletBinding()]
+                [Alias("PSTestAliasName0")]
+                Param
+                (
+                    [ValidateSet([GenValuesForParam])]
+                    $Param1
+                )
+
+                $Param1
+            }
+
+            function Get-TestAlias1
+            {
+                [CmdletBinding()]
+                [Alias([System.Management.Automation.ScopedItemOptions]::ReadOnly, "PSTestAliasName1")]
+                Param
+                (
+                    [ValidateSet([GenValuesForParam])]
+                    $Param1
+                )
+
+                $Param1
+            }
+        }
+
+        It 'Can assign a non-readonly alias for the script cmdlet' {
+            Get-Alias "PSTestAliasName0" -ErrorAction SilentlyContinue | Should Not BeNullOrEmpty
+            Remove-Item Alias:/PSTestAliasName0 -ErrorAction SilentlyContinue
+            Get-Alias "PSTestAliasName0" -ErrorAction SilentlyContinue | Should BeNullOrEmpty
+        }
+
+        It 'Can assign a readonly alias for the script cmdlet' {
+            Get-Alias "PSTestAliasName1" -ErrorAction SilentlyContinue | Should Not BeNullOrEmpty
+            Remove-Item Alias:/PSTestAliasName1 -ErrorAction SilentlyContinue
+            Get-Alias "PSTestAliasName1" -ErrorAction SilentlyContinue | Should Not BeNullOrEmpty
+        }
+    }
+}
