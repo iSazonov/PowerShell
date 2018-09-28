@@ -1,5 +1,3 @@
-Import-Module $PSScriptRoot\..\LanguageTestSupport.psm1
-
 Describe "Positive Parse Accessories Tests" -Tags "CI" {
     BeforeAll {
         $testcasesPasitive = @(
