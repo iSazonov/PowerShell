@@ -4431,10 +4431,10 @@ namespace System.Management.Automation.Language
                     Token getset1 = PeekToken();
                     if (getset1.Kind == TokenKind.Identifier)
                     {
-                        getaccessor1 = String.Compare(getset1.Text, "Get", StringComparison.OrdinalIgnoreCase) == 0;
+                        getaccessor1 = string.Compare(getset1.Text, "Get", StringComparison.OrdinalIgnoreCase) == 0;
                         if (!getaccessor1)
                         {
-                            setaccessor1 = String.Compare(getset1.Text, "Set", StringComparison.OrdinalIgnoreCase) == 0;
+                            setaccessor1 = string.Compare(getset1.Text, "Set", StringComparison.OrdinalIgnoreCase) == 0;
                         }
 
                         if (!getaccessor1 && !setaccessor1)
@@ -4474,6 +4474,7 @@ namespace System.Management.Automation.Language
                             setaccessorDefinition = accessorDefinition1;
                         }
                     }
+
                     SkipNewlinesAndSemicolons();
                     // End of first accessor
 
@@ -4481,10 +4482,10 @@ namespace System.Management.Automation.Language
                     Token getset2 = PeekToken();
                     if (getset2.Kind == TokenKind.Identifier)
                     {
-                        getaccessor2 = String.Compare(getset2.Text, "Get", StringComparison.OrdinalIgnoreCase) == 0;
+                        getaccessor2 = string.Compare(getset2.Text, "Get", StringComparison.OrdinalIgnoreCase) == 0;
                         if (!getaccessor2)
                         {
-                            setaccessor2 = String.Compare(getset2.Text, "Set", StringComparison.OrdinalIgnoreCase) == 0;
+                            setaccessor2 = string.Compare(getset2.Text, "Set", StringComparison.OrdinalIgnoreCase) == 0;
                         }
 
                         if (!getaccessor2 && !setaccessor2)
@@ -4548,6 +4549,7 @@ namespace System.Management.Automation.Language
                         lastVarExtent = rCurly.Extent;
                         SkipToken();
                     }
+
                     token = PeekToken();
 
                     // Accessor block is closed
@@ -4583,6 +4585,7 @@ namespace System.Management.Automation.Language
                     endErrorStatement = terminatorToken.Extent;
                     ReportIncompleteInput(After(lastVarExtent), nameof(ParserStrings.ClassPropertyTerminatorNotFound), ParserStrings.ClassPropertyTerminatorNotFound);
                 }
+
                 SkipNewlinesAndSemicolons();
 
                 // Include the semicolon in the extent but not newline or rcurly as that will look weird, e.g. if an error is reported on the full extent
@@ -4607,7 +4610,7 @@ namespace System.Management.Automation.Language
                     attributes |= PropertyAttributes.Hidden;
                 }
 
-                if (!String.IsNullOrEmpty(varToken.Name) && endErrorStatement == null)
+                if (!string.IsNullOrEmpty(varToken.Name) && endErrorStatement == null)
                 {
                     return new PropertyMemberAst(ExtentOf(startExtent, lastVarExtent),
                                                  varToken.Name,
@@ -5420,6 +5423,7 @@ namespace System.Management.Automation.Language
                 SkipToken();
                 endErrorStatement = ExtentFromFirstOf(lCurly, functionNameToken);
                 ReportIncompleteInput(Before(endErrorStatement), nameof(ParserStrings.ClassAccessorTerminatorNotFound), ParserStrings.ClassAccessorTerminatorNotFound);
+
                 // If eof then don't parse anymore.
                 // This protects against calling 'FunctionDefinitionAst' with incomplete data and throw.
                 return null;
