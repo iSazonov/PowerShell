@@ -4377,7 +4377,8 @@ namespace System.Management.Automation.Language
             {
                 var varToken = token as VariableToken;
                 lastVarExtent = varToken.Extent;
-                // Save the rCurly extent for clear error reporting only
+
+                // Save the rCurly extent for clear error reporting only.
                 IScriptExtent rCurlyAccessorBlock = lastVarExtent;
 
                 SkipToken();
@@ -4385,7 +4386,8 @@ namespace System.Management.Automation.Language
 
                 FunctionMemberAst getaccessorDefinition = null;
                 FunctionMemberAst setaccessorDefinition = null;
-                // 'Get' and 'Set' accessors can appear in any order
+
+                // 'Get' and 'Set' accessors can appear in any order.
                 FunctionDefinitionAst accessorDefinition1 = null;
                 FunctionDefinitionAst accessorDefinition2 = null;
                 bool getaccessor1 = false;
@@ -4397,15 +4399,15 @@ namespace System.Management.Automation.Language
 
                 if (token.Kind == TokenKind.LCurly)
                 {
-                    // Begin accessor's block
-                    // Expecting accessors
+                    // Begin accessor's block.
+                    // Expecting accessors.
                     SkipToken();
                     SkipNewlines();
 
-                    // if '}' is missed we report an error on this position
+                    // If '}' is missed we report an error on this position.
                     rCurlyAccessorBlock = token.Extent;
 
-                    // Begin of first accessor
+                    // Begin of first accessor.
                     Token getset1 = PeekToken();
                     if (getset1.Kind == TokenKind.Identifier)
                     {
@@ -4430,7 +4432,8 @@ namespace System.Management.Automation.Language
                     }
                     if (PeekToken().Kind != TokenKind.RCurly)
                     {
-                        SkipToken();    // Skip 'Get' or 'Set' (or wrong token) and expect accessor body
+                        // Skip 'Get' or 'Set' (or wrong token) and expect accessor body.
+                        SkipToken();
                     }
 
                     accessorDefinition1 = ClassPropertyAccessorDeclarationRule(getset1, className, ref endErrorStatement) as FunctionDefinitionAst;
@@ -4485,7 +4488,8 @@ namespace System.Management.Automation.Language
                     }
                     if (PeekToken().Kind != TokenKind.RCurly)
                     {
-                        SkipToken();    // Skip 'Get' or 'Set' (or wrong token) and expect accessor body
+                        // Skip 'Get' or 'Set' (or wrong token) and expect accessor body.
+                        SkipToken();
                     }
 
                     accessorDefinition2 = ClassPropertyAccessorDeclarationRule(getset2, className, ref endErrorStatement) as FunctionDefinitionAst;
@@ -4513,7 +4517,7 @@ namespace System.Management.Automation.Language
                     var rCurly = PeekToken();
                     if (rCurly.Kind != TokenKind.RCurly)
                     {
-                        // ErrorRecovery: Pretend we saw the missing right curly and keep parsing
+                        // ErrorRecovery: Pretend we saw the missing right curly and keep parsing.
                         //UngetToken(rCurly);
                         lastVarExtent = ExtentFromFirstOf(accessorDefinition2, getset2, accessorDefinition1, getset1, rCurlyAccessorBlock);
                         endErrorStatement = lastVarExtent;
@@ -4532,7 +4536,7 @@ namespace System.Management.Automation.Language
 
                 if (token.Kind == TokenKind.Equals)
                 {
-                    // Parse initializer '= expression'
+                    // Parse initializer '= expression'.
                     SkipToken();
                     SkipNewlines();
                     initialValueAst = ExpressionRule();
@@ -4543,7 +4547,7 @@ namespace System.Management.Automation.Language
                     }
                     else
                     {
-                        // ErrorRecovery: skip all up to accessor block end
+                        // ErrorRecovery: skip all up to accessor block end.
                         SyncOnError(false, TokenKind.NewLine, TokenKind.Semi, TokenKind.RCurly);
                         ReportIncompleteInput(After(token), nameof(ParserStrings.MissingExpressionAfterToken), ParserStrings.MissingExpressionAfterToken, token.Kind.Text());
                         token = PeekToken();
@@ -4554,7 +4558,7 @@ namespace System.Management.Automation.Language
                 Token terminatorToken = token;
                 if (terminatorToken.Kind != TokenKind.NewLine && terminatorToken.Kind != TokenKind.Semi && terminatorToken.Kind != TokenKind.RCurly)
                 {
-                    // ErrorRecovery: skip all up to next class member
+                    // ErrorRecovery: skip all up to next class member.
                     SyncOnError(false, TokenKind.NewLine, TokenKind.Semi, TokenKind.RCurly);
                     endErrorStatement = terminatorToken.Extent;
                     ReportIncompleteInput(After(lastVarExtent), nameof(ParserStrings.ClassPropertyTerminatorNotFound), ParserStrings.ClassPropertyTerminatorNotFound);
@@ -4562,11 +4566,11 @@ namespace System.Management.Automation.Language
                 SkipNewlinesAndSemicolons();
 
                 // Include the semicolon in the extent but not newline or rcurly as that will look weird, e.g. if an error is reported on the full extent
-                //if (terminatorToken.Kind == TokenKind.Semi)
-                //{
-                //    lastVarExtent = terminatorToken.Extent;
-                //    SkipToken();
-                //}
+                //    if (terminatorToken.Kind == TokenKind.Semi)
+                //    {
+                //        lastVarExtent = terminatorToken.Extent;
+                //        SkipToken();
+                //    }
 
                 #if SUPPORT_PUBLIC_PRIVATE
                 PropertyAttributes attributes = privateToken != null ? PropertyAttributes.Private : PropertyAttributes.Public;
@@ -4585,15 +4589,20 @@ namespace System.Management.Automation.Language
 
                 if (!String.IsNullOrEmpty(varToken.Name) && endErrorStatement == null)
                 {
-                    return new PropertyMemberAst(ExtentOf(startExtent, lastVarExtent), varToken.Name,
-                                                typeConstraint, attributeList, attributes, initialValueAst,
-                                                getaccessorDefinition, setaccessorDefinition);
+                    return new PropertyMemberAst(ExtentOf(startExtent, lastVarExtent),
+                                                 varToken.Name,
+                                                 typeConstraint,
+                                                 attributeList,
+                                                 attributes,
+                                                 initialValueAst,
+                                                 getaccessorDefinition,
+                                                 setaccessorDefinition);
                 }
                 else
                 {
                     // Incompleted input like: 'class foo { $private: }'
                     // (error message already emitted by tokenizer ScanVariable)
-                    // or an error was before
+                    // or an error was before.
 
                     IScriptExtent extent = endErrorStatement != null ? ExtentOf(startExtent, endErrorStatement) : startExtent;
                     RecordErrorAsts(new ErrorStatementAst(extent, astsOnError), ref astsOnError);
@@ -4610,12 +4619,13 @@ namespace System.Management.Automation.Language
 
                     if (functionDefinition == null)
                     {
-                        // ErrorRecovery: skip all up to next class member
+                        // ErrorRecovery: skip all up to next class member.
                         SyncOnError(false, TokenKind.NewLine, TokenKind.Semi, TokenKind.RCurly);
                         SkipNewlinesAndSemicolons();
                         token = PeekToken();
                         endErrorStatement = token.Extent;
-                        // Error already reported in MethodDeclarationRule
+
+                        // Error already reported in MethodDeclarationRule.
                     }
                     else
                     {
@@ -4650,17 +4660,17 @@ namespace System.Management.Automation.Language
             {
                 if (token.Kind == TokenKind.LCurly)
                 {
-                    // ErrorRecovery: skip all up to RCurly or Semi or NewLine
+                    // ErrorRecovery: skip all up to RCurly or Semi or NewLine.
                     SyncOnError(true, TokenKind.RCurly, TokenKind.Semi, TokenKind.NewLine);
                 }
 
                 if (token.Kind == TokenKind.Equals)
                 {
-                    // ErrorRecovery: skip all up to Semi or NewLine
+                    // ErrorRecovery: skip all up to Semi or NewLine.
                     SyncOnError(true, TokenKind.Semi, TokenKind.NewLine);
                 }
 
-                // We have the start with attribute(s) for a member, but didn't see the member
+                // We have the start with attribute(s) for a member, but didn't see the member.
                 ReportIncompleteInput(After(ExtentFromFirstOf(lastAttribute)), nameof(ParserStrings.IncompleteMemberDefinition), ParserStrings.IncompleteMemberDefinition);
                 RecordErrorAsts(attributeList, ref astsOnError);
                 RecordErrorAsts(typeConstraint, ref astsOnError);
@@ -5212,7 +5222,7 @@ namespace System.Management.Automation.Language
 
                 if (baseCtorCallParams == null)
                 {
-                    // Assuming implicit default ctor
+                    // Assuming implicit default ctor.
                     baseCtorCallParams = new List<ExpressionAst>();
                 }
             }
@@ -5260,7 +5270,11 @@ namespace System.Management.Automation.Language
                 SetTokenizerMode(TokenizerMode.Command);
                 ScriptBlockAst scriptBlock = ScriptBlockRule(lCurly, false, baseCtorCallStatement);
                 var result = new FunctionDefinitionAst(ExtentOf(functionNameToken, scriptBlock),
-                    /*isFilter:*/false, /*isWorkflow:*/false, functionNameToken, parameters, scriptBlock);
+                                                       isFilter: false,
+                                                       isWorkflow: false,
+                                                       functionNameToken,
+                                                       parameters,
+                                                       scriptBlock);
 
                 return result;
             }
@@ -5364,7 +5378,7 @@ namespace System.Management.Automation.Language
 /*            else
             {
                 // For parameterized property
-                // Existance of parameters assume existance of accessor body
+                // existance of parameters assume existance of accessor body.
                 if (parameters.Count > 1)
                 {
                     // ErrorRecovery: If there is no opening curly, assume it hasn't been entered yet and don't consume anything.
@@ -5376,7 +5390,7 @@ namespace System.Management.Automation.Language
             }
 */
 
-            // Waiting accessor terminator ';' or NewLine or RCurly (close accessor block)
+            // Waiting accessor terminator ';' or NewLine or RCurly (close accessor block).
             if (lCurly.Kind != TokenKind.Semi && lCurly.Kind != TokenKind.NewLine && lCurly.Kind != TokenKind.RCurly && lCurly.Kind != TokenKind.Identifier)
             {
                 // ErrorRecovery: If there is no terminator, assume it hasn't been entered yet and stop parse the accessor.
@@ -5400,7 +5414,11 @@ namespace System.Management.Automation.Language
             }
 
             return new FunctionDefinitionAst(ExtentOf(functionNameToken, scriptBlock),
-                /*isFilter:*/false, /*isWorkflow:*/false, functionNameToken, parameters, scriptBlock);
+                                             isFilter: false,
+                                             isWorkflow:false,
+                                             functionNameToken,
+                                             parameters,
+                                             scriptBlock);
         }
 
         private StatementAst FunctionDeclarationRule(Token functionToken)
