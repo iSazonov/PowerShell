@@ -814,9 +814,12 @@ namespace System.Management.Automation.Language
             {
                     Type typeToLoad = _typeBuilder;
                     setIlGen.Emit(OpCodes.Ldtoken, typeToLoad);
-                    setIlGen.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle")); // load current Type on stack
-                    setIlGen.Emit(OpCodes.Ldstr, propertyMemberAst.Name); // load name of Property
-                    EmitLdarg(setIlGen, propertyMemberAst.IsStatic ? /* static */ 0 : /* instance */ 1); // load 'set' value
+                    // Load current Type on stack.
+                    setIlGen.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
+                    // Load name of Property.
+                    setIlGen.Emit(OpCodes.Ldstr, propertyMemberAst.Name);
+                    // Load 'set' value.
+                    EmitLdarg(setIlGen, propertyMemberAst.IsStatic ? /* static */ 0 : /* instance */ 1);
                     if (type.GetTypeInfo().IsValueType)
                     {
                         setIlGen.Emit(OpCodes.Box, type);
