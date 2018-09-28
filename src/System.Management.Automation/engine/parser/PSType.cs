@@ -633,10 +633,10 @@ namespace System.Management.Automation.Language
                 ILGenerator setIlGen;
                 ILGenerator setIlGenInternal;
 
-                String getMethodName = String.Concat("get_", propertyMemberAst.Name);
-                String getMethodNameInternal = String.Concat("geti_", propertyMemberAst.Name);
-                String setMethodName = String.Concat("set_", propertyMemberAst.Name);
-                String setMethodNameInternal = String.Concat("seti_", propertyMemberAst.Name);
+                String getMethodName = string.Concat("get_", propertyMemberAst.Name);
+                String getMethodNameInternal = string.Concat("geti_", propertyMemberAst.Name);
+                String setMethodName = string.Concat("set_", propertyMemberAst.Name);
+                String setMethodNameInternal = string.Concat("seti_", propertyMemberAst.Name);
 
                 if (propertyMemberAst.GetAccessorDefinition == null)
                 {
