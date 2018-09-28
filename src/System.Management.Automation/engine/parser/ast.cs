@@ -3047,12 +3047,12 @@ namespace System.Management.Automation.Language
         public ExpressionAst InitialValue { get; private set; }
 
         /// <summary>
-        /// The ast for the 'Get' accessor of the property.  It is null for auto implemented property.
+        /// Gets the ast for the 'Get' accessor of the property. It is null for auto implemented property.
         /// </summary>
         public FunctionDefinitionAst GetAccessorDefinition { get; private set; }
 
         /// <summary>
-        /// The ast for the 'Set' accessor of the property.  It is null for auto implemented property.
+        /// Gets the ast for the 'Set' accessor of the property. It is null for auto implemented property.
         /// </summary>
         public FunctionDefinitionAst SetAccessorDefinition { get; private set; }
 
