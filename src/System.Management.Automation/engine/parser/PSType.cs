@@ -565,6 +565,7 @@ namespace System.Management.Automation.Language
                 }
 
                 PropertyBuilder property = this.EmitPropertyIl(propertyMemberAst, type);
+
                 // Define custom attributes on the property, not on the backingField
                 DefineCustomAttributes(property, propertyMemberAst.Attributes, _parser, AttributeTargets.Field | AttributeTargets.Property);
             }
@@ -573,6 +574,7 @@ namespace System.Management.Automation.Language
             {
                 // Backing field is always private.
                 var backingFieldAttributes = FieldAttributes.Private;
+
                 // The property set and property get methods require a special set of attributes.
                 var getSetAttributes = Reflection.MethodAttributes.SpecialName | Reflection.MethodAttributes.HideBySig;
                 getSetAttributes |= propertyMemberAst.IsPublic ? Reflection.MethodAttributes.Public : Reflection.MethodAttributes.Private;
@@ -584,6 +586,7 @@ namespace System.Management.Automation.Language
 
                 string backingFieldName = null;
                 FieldBuilder backingField = null;
+
                 // C# naming convention for backing fields.
                 backingFieldName = String.Format(CultureInfo.InvariantCulture, "<{0}>k__BackingField", propertyMemberAst.Name);
                 backingField = _typeBuilder.DefineField(backingFieldName, type, backingFieldAttributes);
@@ -649,6 +652,7 @@ namespace System.Management.Automation.Language
                     // Custom script is compiled in the internal 'Get' method.
                     // Make the internal method hidden.
                     getMethodInternal = _typeBuilder.DefineMethod(getMethodNameInternal, getSetAttributes, type, new Type[] { type });
+
                     // Remove? Should we set Custom Attributes only on wrapper 'Get' method?
                     DefineCustomAttributes(getMethodInternal, null, _parser, AttributeTargets.Method);
                     getIlGenInternal = getMethodInternal.GetILGenerator();
@@ -677,6 +681,7 @@ namespace System.Management.Automation.Language
 
                         // Pass 'this' for 'getMethodInternal'.
                         EmitLdarg(getIlGen, 0);
+
                         // Pass 'this' to load 'backingField' -> $PSItem.
                         EmitLdarg(getIlGen, 0);
 
@@ -713,6 +718,7 @@ namespace System.Management.Automation.Language
                     {
                         // Pass 'this'.
                         EmitLdarg(setIlGen, 0);
+
                         // Load 'backingField'.
                         EmitLdarg(setIlGen, 1);
 
@@ -725,6 +731,7 @@ namespace System.Management.Automation.Language
                     // Custom script is compiled in the internal 'Set' method.
                     // Make the internal method hidden.
                     setMethodInternal = _typeBuilder.DefineMethod(setMethodNameInternal, getSetAttributes, type, new Type[] { type });
+
                     // Remove? Should we set Custom Attributes only on wrapper 'Set' method?
                     DefineCustomAttributes(setMethodInternal, null, _parser, AttributeTargets.Method);
                     setIlGenInternal = setMethodInternal.GetILGenerator();
@@ -759,11 +766,14 @@ namespace System.Management.Automation.Language
 
                         // Pass 'this' to get later a return value from setMethodInternal.
                         EmitLdarg(setIlGen, 0);
+
                         // Pass 'this' to send parameter in 'setMethodInternal'.
                         EmitLdarg(setIlGen, 0);
+
                         // Pass '$PSItem'.
                         EmitLdarg(setIlGen, 1);
                     }
+
                     setIlGen.Emit(propertyMemberAst.IsStatic ? OpCodes.Call : OpCodes.Callvirt, setMethodInternal);
 
                     // 'setMethodInternal' return a value - put it in 'backingField'.
@@ -796,12 +806,16 @@ namespace System.Management.Automation.Language
             {
                     Type typeToLoad = _typeBuilder;
                     setIlGen.Emit(OpCodes.Ldtoken, typeToLoad);
+
                     // Load current Type on stack.
                     setIlGen.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
+
                     // Load name of Property.
                     setIlGen.Emit(OpCodes.Ldstr, propertyMemberAst.Name);
+
                     // Load 'set' value.
                     EmitLdarg(setIlGen, propertyMemberAst.IsStatic ? /* static */ 0 : /* instance */ 1);
+
                     if (type.GetTypeInfo().IsValueType)
                     {
                         setIlGen.Emit(OpCodes.Box, type);
