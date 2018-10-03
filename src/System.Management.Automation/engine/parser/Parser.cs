@@ -4267,11 +4267,11 @@ namespace System.Management.Automation.Language
             object lastAttribute = null;
             astsOnError = null;
 
-            #if SUPPORT_PUBLIC_PRIVATE
+#if SUPPORT_PUBLIC_PRIVATE
             // Public/private not yet supported
             Token publicToken = null;
             Token privateToken = null;
-            #endif
+#endif
 
             while (scanningAttributes)
             {
@@ -4311,7 +4311,7 @@ namespace System.Management.Automation.Language
 
                 switch (token.Kind)
                 {
-                #if SUPPORT_PUBLIC_PRIVATE
+#if SUPPORT_PUBLIC_PRIVATE
                 case TokenKind.Public:
                     if (publicToken != null)
                     {
@@ -4355,7 +4355,7 @@ namespace System.Management.Automation.Language
                     privateToken = token;
                     SkipToken();
                     break;
-                #endif
+#endif
 
                     case TokenKind.Hidden:
                         if (hiddenToken != null)
@@ -4595,11 +4595,11 @@ namespace System.Management.Automation.Language
                 //        SkipToken();
                 //    }
 
-                #if SUPPORT_PUBLIC_PRIVATE
+#if SUPPORT_PUBLIC_PRIVATE
                 PropertyAttributes attributes = privateToken != null ? PropertyAttributes.Private : PropertyAttributes.Public;
-                #else
+#else
                 PropertyAttributes attributes = PropertyAttributes.Public;
-                #endif
+#endif
 
                 if (staticToken != null)
                 {
@@ -4661,11 +4661,11 @@ namespace System.Management.Automation.Language
                         return null;
                     }
 
-                    #if SUPPORT_PUBLIC_PRIVATE
+#if SUPPORT_PUBLIC_PRIVATE
                     MethodAttributes attributes = privateToken != null ? MethodAttributes.Private : MethodAttributes.Public;
-                    #else
+#else
                     MethodAttributes attributes = MethodAttributes.Public;
-                    #endif
+#endif
                     if (staticToken != null)
                     {
                         attributes |= MethodAttributes.Static;
