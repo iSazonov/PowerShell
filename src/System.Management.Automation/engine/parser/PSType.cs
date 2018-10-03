@@ -636,10 +636,10 @@ namespace System.Management.Automation.Language
                 ILGenerator setIlGen;
                 ILGenerator setIlGenInternal;
 
-                String getMethodName = string.Concat("get_", propertyMemberAst.Name);
-                String getMethodNameInternal = string.Concat("geti_", propertyMemberAst.Name);
-                String setMethodName = string.Concat("set_", propertyMemberAst.Name);
-                String setMethodNameInternal = string.Concat("seti_", propertyMemberAst.Name);
+                string getMethodName = string.Concat("get_", propertyMemberAst.Name);
+                string getMethodNameInternal = string.Concat("geti_", propertyMemberAst.Name);
+                string setMethodName = string.Concat("set_", propertyMemberAst.Name);
+                string setMethodNameInternal = string.Concat("seti_", propertyMemberAst.Name);
 
                 if (propertyMemberAst.GetAccessorDefinition == null)
                 {
@@ -677,8 +677,13 @@ namespace System.Management.Automation.Language
                     getMethodInternal.SetCustomAttribute(s_hiddenCustomAttributeBuilder);
 
                     // In future for parameterized property we should add types.
-                    DefineMethodBody(propertyMemberAst.GetAccessorDefinition, getIlGenInternal, GetMetaDataName(getMethodNameInternal, 0), propertyMemberAst.IsStatic, new Type[] { type }, type,
-                       (i, n) => getMethodInternal.DefineParameter(i, ParameterAttributes.None, n));
+                    DefineMethodBody(propertyMemberAst.GetAccessorDefinition,
+                                     getIlGenInternal,
+                                     GetMetaDataName(getMethodNameInternal, 0),
+                                     propertyMemberAst.IsStatic,
+                                     new Type[] { type },
+                                     type,
+                                     (i, n) => getMethodInternal.DefineParameter(i, ParameterAttributes.None, n));
 
                     // Define the public 'Get' accessor method - it is wrapper for 'getMethodInternal'.
                     // Send 'backingField' parameter as '$PSItem' in 'getMethodInternal'.
@@ -705,6 +710,7 @@ namespace System.Management.Automation.Language
 
                         getIlGen.Emit(OpCodes.Ldfld, backingField);
                     }
+
                     getIlGen.Emit(propertyMemberAst.IsStatic ? OpCodes.Call : OpCodes.Call, getMethodInternal);
                     getIlGen.Emit(OpCodes.Ret);
                 }
@@ -742,6 +748,7 @@ namespace System.Management.Automation.Language
 
                         setIlGen.Emit(OpCodes.Stfld, backingField);
                     }
+
                     setIlGen.Emit(OpCodes.Ret);
                 }
                 else
@@ -751,13 +758,21 @@ namespace System.Management.Automation.Language
                     setMethodInternal = _typeBuilder.DefineMethod(setMethodNameInternal, getSetAttributes, type, new Type[] { type });
 
                     // Remove? Should we set Custom Attributes only on wrapper 'Set' method?
-                    DefineCustomAttributes(setMethodInternal, null, _parser, AttributeTargets.Method);
+                    DefineCustomAttributes(setMethodInternal,
+                                           attributes: null,
+                                           _parser,
+                                           AttributeTargets.Method);
                     setIlGenInternal = setMethodInternal.GetILGenerator();
                     setMethodInternal.SetCustomAttribute(s_hiddenCustomAttributeBuilder);
 
                     // In future for parameterized property we should add types.
-                    DefineMethodBody(propertyMemberAst.SetAccessorDefinition, setIlGenInternal, GetMetaDataName(setMethodNameInternal, 0), propertyMemberAst.IsStatic, new Type[] { type }, type,
-                        (i, n) => setMethodInternal.DefineParameter(i, ParameterAttributes.None, n));
+                    DefineMethodBody(propertyMemberAst.SetAccessorDefinition,
+                                     setIlGenInternal,
+                                     GetMetaDataName(setMethodNameInternal, 0),
+                                     propertyMemberAst.IsStatic,
+                                     new Type[] { type },
+                                     type,
+                                     (i, n) => setMethodInternal.DefineParameter(i, ParameterAttributes.None, n));
 
                     // Define the public 'Set' accessor method - it is wrapper for 'setMethodInternal'.
                     // Send 'rVal' parameter as '$PSItem' in 'setMethodInternal'.
@@ -804,6 +819,7 @@ namespace System.Management.Automation.Language
                         // 'this' already is in stack.
                         setIlGen.Emit(OpCodes.Stfld, backingField);
                     }
+
                     setIlGen.Emit(OpCodes.Ret);
                 }
 
@@ -838,6 +854,7 @@ namespace System.Management.Automation.Language
                     {
                         setIlGen.Emit(OpCodes.Box, type);
                     }
+
                     setIlGen.Emit(OpCodes.Call, CachedReflectionInfo.ClassOps_ValidateSetProperty);
             }
             private bool CheckForDuplicateOverload(FunctionMemberAst functionMemberAst, Type[] newParameters)
