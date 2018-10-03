@@ -15,9 +15,6 @@ using System.Management.Automation.Runspaces;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-#if !CORECLR
-using Microsoft.CodeAnalysis;
-#endif
 
 namespace System.Management.Automation.Language
 {
@@ -4297,7 +4294,9 @@ namespace System.Management.Automation.Language
                     }
                     else
                     {
-                        ReportError(attribute.Extent, nameof(ParserStrings.TooManyTypes), ParserStrings.TooManyTypes);
+                        ReportError(attribute.Extent,
+                                    nameof(ParserStrings.TooManyTypes),
+                                    ParserStrings.TooManyTypes);
                         endErrorStatement = attribute.Extent;
                     }
                     continue;
@@ -4316,20 +4315,21 @@ namespace System.Management.Automation.Language
                     if (publicToken != null)
                     {
                         ReportError(token.Extent,
-                            nameof(ParserStrings.DuplicateQualifier),
-                            ParserStrings.DuplicateQualifier,
-                            token.Text);
+                                    nameof(ParserStrings.DuplicateQualifier),
+                                    ParserStrings.DuplicateQualifier,
+                                    token.Text);
                         endErrorStatement = token.Extent;
                     }
                     if (privateToken != null)
                     {
                         ReportError(token.Extent,
-                            nameof(ParserStrings.ModifiersCannotBeCombined),
-                            ParserStrings.ModifiersCannotBeCombined,
-                            privateToken.Text,
-                            token.Text);
+                                    nameof(ParserStrings.ModifiersCannotBeCombined),
+                                    ParserStrings.ModifiersCannotBeCombined,
+                                    privateToken.Text,
+                                    token.Text);
                         endErrorStatement = token.Extent;
                     }
+
                     publicToken = token;
                     SkipToken();
                     break;
@@ -4338,20 +4338,22 @@ namespace System.Management.Automation.Language
                     if (privateToken != null)
                     {
                         ReportError(token.Extent,
-                            nameof(ParserStrings.DuplicateQualifier),
-                            ParserStrings.DuplicateQualifier,
-                            token.Text);
+                                    nameof(ParserStrings.DuplicateQualifier),
+                                    ParserStrings.DuplicateQualifier,
+                                    token.Text);
                         endErrorStatement = token.Extent;
                     }
+
                     if (publicToken != null)
                     {
                         ReportError(token.Extent,
-                            nameof(ParserStrings.ModifiersCannotBeCombined),
-                            ParserStrings.ModifiersCannotBeCombined,
-                            publicToken.Text,
-                            token.Text);
+                                    nameof(ParserStrings.ModifiersCannotBeCombined),
+                                    ParserStrings.ModifiersCannotBeCombined,
+                                    publicToken.Text,
+                                    token.Text);
                         endErrorStatement = token.Extent;
                     }
+
                     privateToken = token;
                     SkipToken();
                     break;
@@ -4361,11 +4363,12 @@ namespace System.Management.Automation.Language
                         if (hiddenToken != null)
                         {
                             ReportError(token.Extent,
-                                nameof(ParserStrings.DuplicateQualifier),
-                                ParserStrings.DuplicateQualifier,
-                                token.Text);
+                                        nameof(ParserStrings.DuplicateQualifier),
+                                        ParserStrings.DuplicateQualifier,
+                                        token.Text);
                             endErrorStatement = token.Extent;
                         }
+
                         hiddenToken = token;
                         lastAttribute = token;
                         SkipToken();
@@ -4375,11 +4378,12 @@ namespace System.Management.Automation.Language
                         if (staticToken != null)
                         {
                             ReportError(token.Extent,
-                                nameof(ParserStrings.DuplicateQualifier),
-                                ParserStrings.DuplicateQualifier,
-                                token.Text);
+                                        nameof(ParserStrings.DuplicateQualifier),
+                                        ParserStrings.DuplicateQualifier,
+                                        token.Text);
                             endErrorStatement = token.Extent;
                         }
+
                         staticToken = token;
                         lastAttribute = token;
                         SkipToken();
@@ -4441,15 +4445,20 @@ namespace System.Management.Automation.Language
                         {
                             // ErrorRecovery: If there is no 'Get' or 'Set', assume it hasn't been entered yet and don't consume anything.
                             endErrorStatement = getset1.Extent;
-                            ReportIncompleteInput(getset1.Extent, nameof(ParserStrings.ClassPropertyAccessorNameNotFound), ParserStrings.ClassPropertyAccessorNameNotFound);
+                            ReportIncompleteInput(getset1.Extent,
+                                                  nameof(ParserStrings.ClassPropertyAccessorNameNotFound),
+                                                  ParserStrings.ClassPropertyAccessorNameNotFound);
                         }
                     }
                     else
                     {
                         // ErrorRecovery: If there is no 'Get' or 'Set', assume it hasn't been entered yet and don't consume anything.
                         endErrorStatement = getset1.Extent;
-                        ReportIncompleteInput(getset1.Extent, nameof(ParserStrings.ClassPropertyAccessorNameNotFound), ParserStrings.ClassPropertyAccessorNameNotFound);
+                        ReportIncompleteInput(getset1.Extent,
+                                              nameof(ParserStrings.ClassPropertyAccessorNameNotFound),
+                                              ParserStrings.ClassPropertyAccessorNameNotFound);
                     }
+
                     if (PeekToken().Kind != TokenKind.RCurly)
                     {
                         // Skip 'Get' or 'Set' (or wrong token) and expect accessor body.
@@ -4461,8 +4470,11 @@ namespace System.Management.Automation.Language
                     if (accessorDefinition1?.Body?.ParamBlock != null)
                     {
                         endErrorStatement = accessorDefinition1.Extent;
-                        ReportIncompleteInput(accessorDefinition1.Body.ParamBlock.Extent, nameof(ParserStrings.ClassPropertyAccessorParamBlockFound), ParserStrings.ClassPropertyAccessorParamBlockFound);
+                        ReportIncompleteInput(accessorDefinition1.Body.ParamBlock.Extent,
+                                              nameof(ParserStrings.ClassPropertyAccessorParamBlockFound),
+                                              ParserStrings.ClassPropertyAccessorParamBlockFound);
                     }
+
                     if (getaccessor1)
                     {
                         getaccessorDefinition = accessorDefinition1;
@@ -4492,21 +4504,30 @@ namespace System.Management.Automation.Language
                         {
                             // ErrorRecovery: If there is no 'Get' or 'Set', assume it hasn't been entered yet and don't consume anything.
                             endErrorStatement = getset2.Extent;
-                            ReportIncompleteInput(getset2.Extent, nameof(ParserStrings.ClassPropertyAccessorNameNotFound), ParserStrings.ClassPropertyAccessorNameNotFound);
+                            ReportIncompleteInput(getset2.Extent,
+                                                  nameof(ParserStrings.ClassPropertyAccessorNameNotFound),
+                                                  ParserStrings.ClassPropertyAccessorNameNotFound);
                         }
+
                         if ((getaccessor1 && getaccessor2) || (setaccessor1 && setaccessor2))
                         {
                             // ErrorRecovery: If there is dublicate 'Get' or 'Set' names, assume it will be corrected by user and don't consume anything.
                             endErrorStatement = getset2.Extent;
-                            ReportIncompleteInput(getset2.Extent, nameof(ParserStrings.ClassPropertyAccessorDublicateName), ParserStrings.ClassPropertyAccessorDublicateName, getset2.Text);
+                            ReportIncompleteInput(getset2.Extent,
+                                                  nameof(ParserStrings.ClassPropertyAccessorDublicateName),
+                                                  ParserStrings.ClassPropertyAccessorDublicateName,
+                                                  getset2.Text);
                         }
                     }
                     else
                     {
                         // ErrorRecovery: If there is no 'Get' or 'Set', assume it hasn't been entered yet and don't consume anything.
                         endErrorStatement = getset2.Extent;
-                        ReportIncompleteInput(getset2.Extent, nameof(ParserStrings.ClassPropertyAccessorNameNotFound), ParserStrings.ClassPropertyAccessorNameNotFound);
+                        ReportIncompleteInput(getset2.Extent,
+                                              nameof(ParserStrings.ClassPropertyAccessorNameNotFound),
+                                              ParserStrings.ClassPropertyAccessorNameNotFound);
                     }
+
                     if (PeekToken().Kind != TokenKind.RCurly)
                     {
                         // Skip 'Get' or 'Set' (or wrong token) and expect accessor body.
@@ -4518,8 +4539,11 @@ namespace System.Management.Automation.Language
                     if (accessorDefinition2?.Body?.ParamBlock != null)
                     {
                         endErrorStatement = accessorDefinition2.Extent;
-                        ReportIncompleteInput(accessorDefinition2.Body.ParamBlock.Extent, nameof(ParserStrings.ClassPropertyAccessorParamBlockFound), ParserStrings.ClassPropertyAccessorParamBlockFound);
+                        ReportIncompleteInput(accessorDefinition2.Body.ParamBlock.Extent,
+                                              nameof(ParserStrings.ClassPropertyAccessorParamBlockFound),
+                                              ParserStrings.ClassPropertyAccessorParamBlockFound);
                     }
+
                     if (getaccessor2)
                     {
                         getaccessorDefinition = accessorDefinition2;
@@ -4542,7 +4566,9 @@ namespace System.Management.Automation.Language
                         //UngetToken(rCurly);
                         lastVarExtent = ExtentFromFirstOf(accessorDefinition2, getset2, accessorDefinition1, getset1, rCurlyAccessorBlock);
                         endErrorStatement = lastVarExtent;
-                        ReportIncompleteInput(After(rCurlyAccessorBlock), nameof(ParserStrings.MissingEndCurlyBrace), ParserStrings.MissingEndCurlyBrace);
+                        ReportIncompleteInput(After(rCurlyAccessorBlock),
+                                              nameof(ParserStrings.MissingEndCurlyBrace),
+                                              ParserStrings.MissingEndCurlyBrace);
                     }
                     else
                     {
@@ -4571,7 +4597,9 @@ namespace System.Management.Automation.Language
                     {
                         // ErrorRecovery: skip all up to accessor block end.
                         SyncOnError(false, TokenKind.NewLine, TokenKind.Semi, TokenKind.RCurly);
-                        ReportIncompleteInput(After(token), nameof(ParserStrings.MissingExpressionAfterToken), ParserStrings.MissingExpressionAfterToken, token.Kind.Text());
+                        ReportIncompleteInput(After(token),
+                                              nameof(ParserStrings.MissingExpressionAfterToken),
+                                              ParserStrings.MissingExpressionAfterToken, token.Kind.Text());
                         token = PeekToken();
                         endErrorStatement = token.Extent;
                     }
@@ -4583,7 +4611,9 @@ namespace System.Management.Automation.Language
                     // ErrorRecovery: skip all up to next class member.
                     SyncOnError(false, TokenKind.NewLine, TokenKind.Semi, TokenKind.RCurly);
                     endErrorStatement = terminatorToken.Extent;
-                    ReportIncompleteInput(After(lastVarExtent), nameof(ParserStrings.ClassPropertyTerminatorNotFound), ParserStrings.ClassPropertyTerminatorNotFound);
+                    ReportIncompleteInput(After(lastVarExtent),
+                                          nameof(ParserStrings.ClassPropertyTerminatorNotFound),
+                                          ParserStrings.ClassPropertyTerminatorNotFound);
                 }
 
                 SkipNewlinesAndSemicolons();
@@ -4605,6 +4635,7 @@ namespace System.Management.Automation.Language
                 {
                     attributes |= PropertyAttributes.Static;
                 }
+
                 if (hiddenToken != null)
                 {
                     attributes |= PropertyAttributes.Hidden;
@@ -4631,7 +4662,8 @@ namespace System.Management.Automation.Language
                     RecordErrorAsts(new ErrorStatementAst(extent, astsOnError), ref astsOnError);
                     return null;
                 }
-            } else
+            }
+            else
             {
                 if (token.Kind == TokenKind.Identifier)
                 {
@@ -4670,6 +4702,7 @@ namespace System.Management.Automation.Language
                     {
                         attributes |= MethodAttributes.Static;
                     }
+
                     if (hiddenToken != null)
                     {
                         attributes |= MethodAttributes.Hidden;
@@ -4694,7 +4727,9 @@ namespace System.Management.Automation.Language
                 }
 
                 // We have the start with attribute(s) for a member, but didn't see the member.
-                ReportIncompleteInput(After(ExtentFromFirstOf(lastAttribute)), nameof(ParserStrings.IncompleteMemberDefinition), ParserStrings.IncompleteMemberDefinition);
+                ReportIncompleteInput(After(ExtentFromFirstOf(lastAttribute)),
+                                      nameof(ParserStrings.IncompleteMemberDefinition),
+                                      ParserStrings.IncompleteMemberDefinition);
                 RecordErrorAsts(attributeList, ref astsOnError);
                 RecordErrorAsts(typeConstraint, ref astsOnError);
             }
@@ -5334,7 +5369,7 @@ namespace System.Management.Automation.Language
                 parameters = new List<ParameterAst>();
             }
 
-/*            // Skip parateter list
+/*            // Skip parameter list
             if (lParen.Kind == TokenKind.LParen)
             {
                 // ErrorRecovery: If there is a parameters list, skip it.
@@ -5354,27 +5389,28 @@ namespace System.Management.Automation.Language
             if (parameters.Count > 0)
             {
                 parameters.Clear();
-                ReportIncompleteInput(After(functionNameToken.Extent), nameof(ParserStrings.ClassAccessorParametersListFound), ParserStrings.ClassAccessorParametersListFound);
+                ReportIncompleteInput(After(functionNameToken.Extent),
+                                      nameof(ParserStrings.ClassAccessorParametersListFound),
+                                      ParserStrings.ClassAccessorParametersListFound);
             }
 
             // Add implicit $PSItem parameter to Set accessor method to get 'rVal'
             // Add implicit $PSItem parameter to Get accessor method to get 'backing field'
             // The parameter is '$PSItem' or '$_'
-            /*
-                class foo {
-                [string]$bar_ = "a";
-                [string]$bar {
-                    get { #getter code
-                        return $bar_
-                        # or
-                        return $_   # or return $PSItem
-                    }
-                    set { # setter code
-                        $this.bar_ = $PSItem    # $PSItem or $_ contain <rval>
-                        # or
-                        return $_   # explicit assignment to <backing field>
-                }  }  }
-            */
+            //
+            //    class foo {
+            //    [string]$bar_ = "a";
+            //    [string]$bar {
+            //        get { #getter code
+            //            return $bar_
+            //            # or
+            //            return $_   # or return $PSItem
+            //        }
+            //        set { # setter code
+            //            $this.bar_ = $PSItem    # $PSItem or $_ contain <rval>
+            //            # or
+            //            return $_   # explicit assignment to <backing field>
+            //    }  }  }
             //
 
             IScriptExtent extent = After(functionNameToken.Extent);
@@ -5398,6 +5434,7 @@ namespace System.Management.Automation.Language
                 {
                     SetTokenizerMode(oldTokenizerMode);
                 }
+
                 lCurly = PeekToken();
             }
 /*            else
@@ -5422,7 +5459,9 @@ namespace System.Management.Automation.Language
                 //UngetToken(lCurly);
                 SkipToken();
                 endErrorStatement = ExtentFromFirstOf(lCurly, functionNameToken);
-                ReportIncompleteInput(Before(endErrorStatement), nameof(ParserStrings.ClassAccessorTerminatorNotFound), ParserStrings.ClassAccessorTerminatorNotFound);
+                ReportIncompleteInput(Before(endErrorStatement),
+                                      nameof(ParserStrings.ClassAccessorTerminatorNotFound),
+                                      ParserStrings.ClassAccessorTerminatorNotFound);
 
                 // If eof then don't parse anymore.
                 // This protects against calling 'FunctionDefinitionAst' with incomplete data and throw.
