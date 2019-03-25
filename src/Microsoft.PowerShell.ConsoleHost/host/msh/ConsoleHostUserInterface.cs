@@ -1410,6 +1410,7 @@ namespace Microsoft.PowerShell
             return sb.ToString();
         }
 
+#if UNUX
         private string ReadLineFromConsole(bool endOnTab, string initialContent, bool calledFromPipeline, ref string restOfLine, ref ReadLineResult result)
         {
             PreRead();
@@ -1719,8 +1720,142 @@ namespace Microsoft.PowerShell
             }
 #endif
         }
+#endif
 
 #if !UNIX
+        private string ReadLineFromConsole(bool endOnTab, string initialContent, bool calledFromPipeline, ref string restOfLine, ref ReadLineResult result)
+        {
+            PreRead();
+
+            // Ensure that we're in the proper line-input mode.
+            ConsoleHandle handle = ConsoleControl.GetConioDeviceHandle();
+            ConsoleControl.ConsoleModes m = ConsoleControl.GetMode(handle);
+
+            const ConsoleControl.ConsoleModes desiredMode =
+                ConsoleControl.ConsoleModes.LineInput
+                | ConsoleControl.ConsoleModes.EchoInput
+                | ConsoleControl.ConsoleModes.ProcessedInput;
+
+            if ((m & desiredMode) != desiredMode || (m & ConsoleControl.ConsoleModes.MouseInput) > 0)
+            {
+                m &= ~ConsoleControl.ConsoleModes.MouseInput;
+                m |= desiredMode;
+                ConsoleControl.SetMode(handle, m);
+            }
+
+            // If more characters are typed than you asked, then the next call to ReadConsole will return the
+            // additional characters beyond those you requested.
+            //
+            // If input is terminated with a tab key, then the buffer returned will have a tab (ascii 0x9) at the
+            // position where the tab key was hit.  If the user has arrowed backward over existing input in the line
+            // buffer, the tab will overwrite whatever character was in that position. That character will be lost in
+            // the input buffer, but since we echo each character the user types, it's still in the active screen buffer
+            // and we can read the console output to get that character.
+            //
+            // If input is terminated with an enter key, then the buffer returned will have ascii 0x0D and 0x0A
+            // (Carriage Return and Line Feed) as the last two characters of the buffer.
+            //
+            // If input is terminated with a break key (Ctrl-C, Ctrl-Break, Close, etc.), then the buffer will be
+            // the empty string.
+
+            _rawui.ClearKeyCache();
+            uint keyState = 0;
+            string s = string.Empty;
+            Span<char> inputBuffer = stackalloc char[MaxInputLineLength + 1];
+            if (initialContent.Length > 0)
+            {
+                initialContent.AsSpan().CopyTo(inputBuffer);
+            }
+
+            do
+            {
+                s += ConsoleControl.ReadConsole(handle, initialContent.Length, inputBuffer, MaxInputLineLength, endOnTab, out keyState);
+                Dbg.Assert(s != null, "s should never be null");
+
+                if (s.Length == 0)
+                {
+                    result = ReadLineResult.endedOnBreak;
+                    s = null;
+
+                    if (calledFromPipeline)
+                    {
+                        // make sure that the pipeline that called us is stopped
+
+                        throw new PipelineStoppedException();
+                    }
+
+                    break;
+                }
+
+                if (s.EndsWith(Crlf, StringComparison.Ordinal))
+                {
+                    result = ReadLineResult.endedOnEnter;
+                    s = s.Remove(s.Length - Crlf.Length);
+                    break;
+                }
+
+                int i = s.IndexOf(Tab, StringComparison.Ordinal);
+
+                if (endOnTab && i != -1)
+                {
+                    // then the tab we found is the completion character.  bit 0x10 is set if the shift key was down
+                    // when the key was hit.
+
+                    if ((keyState & 0x10) == 0)
+                    {
+                        result = ReadLineResult.endedOnTab;
+                    }
+                    else if ((keyState & 0x10) > 0)
+                    {
+                        result = ReadLineResult.endedOnShiftTab;
+                    }
+                    else
+                    {
+                        // do nothing: leave the result state as it was. This is the circumstance when we've have to
+                        // do more than one iteration and the input ended on a tab or shift-tab, or the user hit
+                        // enter, or the user hit ctrl-c
+                    }
+
+                    // also clean up the screen -- if the cursor was positioned somewhere before the last character
+                    // in the input buffer, then the characters from the tab to the end of the buffer need to be
+                    // erased.
+                    int leftover = RawUI.LengthInBufferCells(s.Substring(i + 1));
+
+                    if (leftover > 0)
+                    {
+                        Coordinates c = RawUI.CursorPosition;
+
+                        // before cleaning up the screen, read the active screen buffer to retrieve the character that
+                        // is overridden by the tab
+                        char charUnderCursor = GetCharacterUnderCursor(c);
+
+                        Write(StringUtil.Padding(leftover));
+                        RawUI.CursorPosition = c;
+
+                        restOfLine = s[i] + (charUnderCursor + s.Substring(i + 1));
+                    }
+                    else
+                    {
+                        restOfLine += s[i];
+                    }
+
+                    s = s.Remove(i);
+
+                    break;
+                }
+
+                Dbg.Assert(true, "Unexpected input case: we should never be here");
+            }
+            while (true);
+
+            Dbg.Assert(
+                        (s == null && result == ReadLineResult.endedOnBreak)
+                        || (s != null && result != ReadLineResult.endedOnBreak),
+                        "s should only be null if input ended with a break");
+
+            return s;
+        }
+
         /// <summary>
         /// Get the character at the cursor when the user types 'tab' in the middle of line.
         /// </summary>
