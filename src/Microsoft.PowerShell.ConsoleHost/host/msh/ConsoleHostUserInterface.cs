@@ -1414,24 +1414,6 @@ namespace Microsoft.PowerShell
         private string ReadLineFromConsole(bool endOnTab, string initialContent, bool calledFromPipeline, ref string restOfLine, ref ReadLineResult result)
         {
             PreRead();
-            // Ensure that we're in the proper line-input mode.
-
-#if !UNIX
-            ConsoleHandle handle = ConsoleControl.GetConioDeviceHandle();
-            ConsoleControl.ConsoleModes m = ConsoleControl.GetMode(handle);
-
-            const ConsoleControl.ConsoleModes desiredMode =
-                ConsoleControl.ConsoleModes.LineInput
-                | ConsoleControl.ConsoleModes.EchoInput
-                | ConsoleControl.ConsoleModes.ProcessedInput;
-
-            if ((m & desiredMode) != desiredMode || (m & ConsoleControl.ConsoleModes.MouseInput) > 0)
-            {
-                m &= ~ConsoleControl.ConsoleModes.MouseInput;
-                m |= desiredMode;
-                ConsoleControl.SetMode(handle, m);
-            }
-#endif
 
             // If more characters are typed than you asked, then the next call to ReadConsole will return the
             // additional characters beyond those you requested.
@@ -1448,7 +1430,6 @@ namespace Microsoft.PowerShell
             // If input is terminated with a break key (Ctrl-C, Ctrl-Break, Close, etc.), then the buffer will be
             // the empty string.
 
-#if UNIX
             // For Unix systems, we implement a basic readline loop around Console.ReadKey(), that
             // supports backspace, arrow keys, Ctrl-C, and Ctrl-D. This readline is only used for
             // interactive prompts (like Read-Host), otherwise it is assumed that PSReadLine is
@@ -1458,7 +1439,6 @@ namespace Microsoft.PowerShell
 
             try
             {
-
                 ConsoleKeyInfo keyInfo;
                 string s = string.Empty;
                 int index = 0;
@@ -1466,32 +1446,13 @@ namespace Microsoft.PowerShell
                 int cursorCurrent = cursorLeft;
                 bool insertMode = true;
                 Console.TreatControlCAsInput = true;
-#else
-            _rawui.ClearKeyCache();
-            uint keyState = 0;
-            string s = string.Empty;
-            Span<char> inputBuffer = stackalloc char[MaxInputLineLength + 1];
-            if (initialContent.Length > 0)
-            {
-                initialContent.AsSpan().CopyTo(inputBuffer);
-            }
 
-#endif
                 do
                 {
-#if UNIX
                     keyInfo = Console.ReadKey(true);
-#else
-                s += ConsoleControl.ReadConsole(handle, initialContent.Length, inputBuffer, MaxInputLineLength, endOnTab, out keyState);
-                Dbg.Assert(s != null, "s should never be null");
-#endif
 
-#if UNIX
                     // Handle Ctrl-C ending input
                     if (keyInfo.Key == ConsoleKey.C && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control))
-#else
-                if (s.Length == 0)
-#endif
                     {
                         result = ReadLineResult.endedOnBreak;
                         s = null;
@@ -1506,80 +1467,21 @@ namespace Microsoft.PowerShell
                         break;
                     }
 
-#if UNIX
                     if (keyInfo.Key == ConsoleKey.Enter)
-#else
-                if (s.EndsWith(Crlf, StringComparison.Ordinal))
-#endif
                     {
                         result = ReadLineResult.endedOnEnter;
-#if UNIX
+
                         // We're intercepting characters, so we need to echo the newline
                         Console.Out.WriteLine();
-#else
-                    s = s.Remove(s.Length - Crlf.Length);
-#endif
                         break;
                     }
 
-#if UNIX
                     if (keyInfo.Key == ConsoleKey.Tab)
                     {
                         // This is unsupported
                         continue;
                     }
-#else
-                int i = s.IndexOf(Tab, StringComparison.Ordinal);
 
-                if (endOnTab && i != -1)
-                {
-                    // then the tab we found is the completion character.  bit 0x10 is set if the shift key was down
-                    // when the key was hit.
-
-                    if ((keyState & 0x10) == 0)
-                    {
-                        result = ReadLineResult.endedOnTab;
-                    }
-                    else if ((keyState & 0x10) > 0)
-                    {
-                        result = ReadLineResult.endedOnShiftTab;
-                    }
-                    else
-                    {
-                        // do nothing: leave the result state as it was. This is the circumstance when we've have to
-                        // do more than one iteration and the input ended on a tab or shift-tab, or the user hit
-                        // enter, or the user hit ctrl-c
-                    }
-
-                    // also clean up the screen -- if the cursor was positioned somewhere before the last character
-                    // in the input buffer, then the characters from the tab to the end of the buffer need to be
-                    // erased.
-                    int leftover = RawUI.LengthInBufferCells(s.Substring(i + 1));
-
-                    if (leftover > 0)
-                    {
-                        Coordinates c = RawUI.CursorPosition;
-
-                        // before cleaning up the screen, read the active screen buffer to retrieve the character that
-                        // is overridden by the tab
-                        char charUnderCursor = GetCharacterUnderCursor(c);
-
-                        Write(StringUtil.Padding(leftover));
-                        RawUI.CursorPosition = c;
-
-                        restOfLine = s[i] + (charUnderCursor + s.Substring(i + 1));
-                    }
-                    else
-                    {
-                        restOfLine += s[i];
-                    }
-
-                    s = s.Remove(i);
-
-                    break;
-                }
-#endif
-#if UNIX
                     if (keyInfo.Key == ConsoleKey.Backspace)
                     {
                         if (index > 0)
@@ -1702,7 +1604,6 @@ namespace Microsoft.PowerShell
                     Console.CursorLeft = cursorLeft;
                     Console.Out.Write(s);
                     Console.CursorLeft = cursorCurrent + 1;
-#endif
                 }
                 while (true);
 
@@ -1712,13 +1613,11 @@ namespace Microsoft.PowerShell
                            "s should only be null if input ended with a break");
 
                 return s;
-#if UNIX
             }
             finally
             {
                 Console.TreatControlCAsInput = treatControlCAsInput;
             }
-#endif
         }
 #endif
 
