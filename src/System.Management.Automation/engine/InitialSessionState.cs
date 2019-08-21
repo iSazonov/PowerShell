@@ -3264,7 +3264,7 @@ namespace System.Management.Automation.Runspaces
                             // default drive to $pshome
                             System.Diagnostics.Process currentProcess = System.Diagnostics.Process.GetCurrentProcess();
                             string defaultPath = System.IO.Path.GetDirectoryName(PsUtils.GetMainModule(currentProcess).FileName);
-                            context.EngineSessionState.SetLocationFast(defaultPath);
+                            context.EngineSessionState.SetLocationFileSystemFast(defaultPath);
                         }
                     }
                 }
