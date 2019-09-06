@@ -590,25 +590,88 @@ namespace System.Management.Automation
             return this.CurrentLocation;
         }
 
-        /// <summary>
-        /// Changes the current working directory to the path specified.
-        /// It is only for FileSystem provider paths and optimized to be fast.
-        /// </summary>
-        /// <param name="path">
-        /// The file system path of the new current working directory.
-        /// </param>
-        /// <exception cref="ArgumentNullException">
-        /// If <paramref name="path"/> is null.
-        /// </exception>
-        /// <exception cref="DriveNotFoundException">
-        /// If <paramref name="path"/> refers to a drive that does not exist.
-        /// </exception>
-        internal void SetLocationFileSystemFast(string path)
+        internal static void SetSessionStateDrive(ExecutionContext context, bool setLocation)
         {
-            if (path == null)
+            // Set the starting location to the current process working directory
+            // Ignore any errors as the file system provider may not be loaded or
+            // a drive with the same name as the real file system drive may not have
+            // been mounted.
+            try
             {
-                throw PSTraceSource.NewArgumentNullException(nameof(path));
+                bool proceedWithSetLocation = true;
+
+                if (context.EngineSessionState.ProviderCount > 0)
+                {
+                    // NTRAID#Windows Out Of Band Releases-908481-2005/07/01-JeffJon
+                    // Make sure we have a CurrentDrive set so that we can deal with
+                    // UNC paths
+
+                    if (context.EngineSessionState.CurrentDrive == null)
+                    {
+                        bool fsDriveSet = false;
+                        try
+                        {
+                            // Set the current drive to the first FileSystem drive if it exists.
+                            ProviderInfo fsProvider = context.EngineSessionState.GetSingleProvider(context.ProviderNames.FileSystem);
+
+                            Collection<PSDriveInfo> fsDrives = fsProvider.Drives;
+                            if (fsDrives != null && fsDrives.Count > 0)
+                            {
+                                context.EngineSessionState.CurrentDrive = fsDrives[0];
+                                fsDriveSet = true;
+                            }
+                        }
+                        catch (ProviderNotFoundException)
+                        {
+                        }
+
+                        if (!fsDriveSet)
+                        {
+                            Collection<PSDriveInfo> allDrives = context.EngineSessionState.Drives(null);
+
+                            if (allDrives != null && allDrives.Count > 0)
+                            {
+                                context.EngineSessionState.CurrentDrive = allDrives[0];
+                            }
+                            else
+                            {
+                                ItemNotFoundException itemNotFound =
+                                    new ItemNotFoundException(Directory.GetCurrentDirectory(), "PathNotFound", SessionStateStrings.PathNotFound);
+
+                                context.ReportEngineStartupError(itemNotFound);
+                                proceedWithSetLocation = false;
+                            }
+                        }
+                    }
+
+                    if (proceedWithSetLocation && setLocation)
+                    {
+                        try
+                        {
+                            context.EngineSessionState.SetLocationToCurrentFileSystemDirectory();
+                        }
+                        catch (ItemNotFoundException)
+                        {
+                            // If we can't access the Environment.CurrentDirectory, we may be in an AppContainer. Set the
+                            // default drive to $pshome
+                            System.Diagnostics.Process currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+                            string defaultPath = System.IO.Path.GetDirectoryName(PsUtils.GetMainModule(currentProcess).FileName);
+                            context.EngineSessionState.SetLocation(defaultPath);
+                        }
+                    }
+                }
             }
+            catch (Exception)
+            {
+            }
+        }
+
+        /// <summary>
+        /// Set location to current file system directory.
+        /// </summary>
+        private void SetLocationToCurrentFileSystemDirectory()
+        {
+            string path = Directory.GetCurrentDirectory();
 
             PathInfo current = null;
             if (PublicSessionState.InvokeCommand.LocationChangedAction != null)

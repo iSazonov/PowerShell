@@ -2200,7 +2200,7 @@ namespace System.Management.Automation.Runspaces
                 }
             }
 
-            SetSessionStateDrive(context, setLocation: setLocation);
+            SessionStateInternal.SetSessionStateDrive(context, setLocation: setLocation);
         }
 
         private void Bind_SetVariables(SessionStateInternal ss)
@@ -3187,7 +3187,7 @@ namespace System.Management.Automation.Runspaces
                 InitialSessionState.CreateQuestionVariable(context);
 
                 // Reset the path for this runspace.
-                SetSessionStateDrive(context, true);
+                SessionStateInternal.SetSessionStateDrive(context, true);
 
                 // Reset the event, transaction and debug managers.
                 context.ResetManagers();
@@ -3195,82 +3195,6 @@ namespace System.Management.Automation.Runspaces
                 // Reset tracing/debugging to the off state.
                 context.PSDebugTraceLevel = 0;
                 context.PSDebugTraceStep = false;
-            }
-        }
-
-        internal static void SetSessionStateDrive(ExecutionContext context, bool setLocation)
-        {
-            // Set the starting location to the current process working directory
-            // Ignore any errors as the file system provider may not be loaded or
-            // a drive with the same name as the real file system drive may not have
-            // been mounted.
-            try
-            {
-                bool proceedWithSetLocation = true;
-
-                if (context.EngineSessionState.ProviderCount > 0)
-                {
-                    // NTRAID#Windows Out Of Band Releases-908481-2005/07/01-JeffJon
-                    // Make sure we have a CurrentDrive set so that we can deal with
-                    // UNC paths
-
-                    if (context.EngineSessionState.CurrentDrive == null)
-                    {
-                        bool fsDriveSet = false;
-                        try
-                        {
-                            // Set the current drive to the first FileSystem drive if it exists.
-                            ProviderInfo fsProvider = context.EngineSessionState.GetSingleProvider(context.ProviderNames.FileSystem);
-
-                            Collection<PSDriveInfo> fsDrives = fsProvider.Drives;
-                            if (fsDrives != null && fsDrives.Count > 0)
-                            {
-                                context.EngineSessionState.CurrentDrive = fsDrives[0];
-                                fsDriveSet = true;
-                            }
-                        }
-                        catch (ProviderNotFoundException)
-                        {
-                        }
-
-                        if (!fsDriveSet)
-                        {
-                            Collection<PSDriveInfo> allDrives = context.EngineSessionState.Drives(null);
-
-                            if (allDrives != null && allDrives.Count > 0)
-                            {
-                                context.EngineSessionState.CurrentDrive = allDrives[0];
-                            }
-                            else
-                            {
-                                ItemNotFoundException itemNotFound =
-                                    new ItemNotFoundException(Directory.GetCurrentDirectory(), "PathNotFound", SessionStateStrings.PathNotFound);
-
-                                context.ReportEngineStartupError(itemNotFound);
-                                proceedWithSetLocation = false;
-                            }
-                        }
-                    }
-
-                    if (proceedWithSetLocation && setLocation)
-                    {
-                        try
-                        {
-                            context.EngineSessionState.SetLocationFileSystemFast(Directory.GetCurrentDirectory());
-                        }
-                        catch (ItemNotFoundException)
-                        {
-                            // If we can't access the Environment.CurrentDirectory, we may be in an AppContainer. Set the
-                            // default drive to $pshome
-                            System.Diagnostics.Process currentProcess = System.Diagnostics.Process.GetCurrentProcess();
-                            string defaultPath = System.IO.Path.GetDirectoryName(PsUtils.GetMainModule(currentProcess).FileName);
-                            context.EngineSessionState.SetLocationFileSystemFast(defaultPath);
-                        }
-                    }
-                }
-            }
-            catch (Exception)
-            {
             }
         }
 
