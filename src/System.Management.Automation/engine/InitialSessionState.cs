@@ -2200,7 +2200,7 @@ namespace System.Management.Automation.Runspaces
                 }
             }
 
-            SessionStateInternal.SetSessionStateDrive(context, setLocation: setLocation);
+            SessionStateInternal.SetDefaultSessionStateDrive(context, setLocation: setLocation);
         }
 
         private void Bind_SetVariables(SessionStateInternal ss)
@@ -3187,7 +3187,7 @@ namespace System.Management.Automation.Runspaces
                 InitialSessionState.CreateQuestionVariable(context);
 
                 // Reset the path for this runspace.
-                SessionStateInternal.SetSessionStateDrive(context, true);
+                SessionStateInternal.SetDefaultSessionStateDrive(context, true);
 
                 // Reset the event, transaction and debug managers.
                 context.ResetManagers();

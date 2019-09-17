@@ -590,7 +590,7 @@ namespace System.Management.Automation
             return this.CurrentLocation;
         }
 
-        internal static void SetSessionStateDrive(ExecutionContext context, bool setLocation)
+        internal static void SetDefaultSessionStateDrive(ExecutionContext context, bool setLocation)
         {
             // Set the starting location to the current process working directory
             // Ignore any errors as the file system provider may not be loaded or
@@ -648,7 +648,7 @@ namespace System.Management.Automation
                     {
                         try
                         {
-                            context.EngineSessionState.SetLocationToCurrentFileSystemDirectory();
+                            context.EngineSessionState.SetDefaultLocationToCurrentFileSystemDirectory();
                         }
                         catch (Exception)
                         {
@@ -668,7 +668,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Set location to current file system directory.
         /// </summary>
-        private void SetLocationToCurrentFileSystemDirectory()
+        private void SetDefaultLocationToCurrentFileSystemDirectory()
         {
             string path = Directory.GetCurrentDirectory();
 
