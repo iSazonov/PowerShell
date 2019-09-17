@@ -650,10 +650,9 @@ namespace System.Management.Automation
                         {
                             context.EngineSessionState.SetLocationToCurrentFileSystemDirectory();
                         }
-                        catch (ItemNotFoundException)
+                        catch (Exception)
                         {
-                            // If we can't access the Environment.CurrentDirectory, we may be in an AppContainer. Set the
-                            // default drive to $pshome
+                            // If we can't access the Environment.CurrentDirectory. Set the default drive to $pshome
                             System.Diagnostics.Process currentProcess = System.Diagnostics.Process.GetCurrentProcess();
                             string defaultPath = System.IO.Path.GetDirectoryName(PsUtils.GetMainModule(currentProcess).FileName);
                             context.EngineSessionState.SetLocation(defaultPath);
