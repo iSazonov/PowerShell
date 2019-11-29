@@ -1,10 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Management.Automation.Internal;
 using System.Text;
 using System.Threading;
 
@@ -48,7 +46,7 @@ namespace System.Management.Automation.Configuration
     internal sealed class PowerShellConfig
     {
         private const string ConfigFileName = "powershell.config.json";
-        private const string ExecutionPolicyDefaultShellKey = "Microsoft.PowerShell:ExecutionPolicy";
+        internal const string ExecutionPolicyDefaultShellKey = "Microsoft.PowerShell:ExecutionPolicy";
 
         // Provide a singleton
         internal static readonly PowerShellConfig Instance = new PowerShellConfig();
@@ -563,6 +561,87 @@ namespace System.Management.Automation.Configuration
         }
     }
 
+    /// <summary>
+    ///
+    /// </summary>
+    public sealed class PowerShellConfigFile
+    {
+        /// <summary>
+        /// Internal singleton for default options.
+        /// </summary>
+        internal static PowerShellConfigFile Default { get; } = new PowerShellConfigFile();
+
+        /// <summary>
+        ///
+        /// </summary>
+        public PowerShellConfigFile()
+        {
+            PSModulePath = null;
+            ExperimentalFeatures = null;
+#if UNIX
+            LogIdentity = "powershell";
+            LogLevel = PSLevel.Informational;
+            LogChannels = System.Management.Automation.Tracing.PSSysLogProvider.DefaultChannels;
+            LogKeywords = System.Management.Automation.Tracing.PSSysLogProvider.DefaultKeywords;
+#endif
+            ExecutionPolicy = new Dictionary<string, object>()
+            {
+                { PowerShellConfig.ExecutionPolicyDefaultShellKey, Microsoft.PowerShell.ExecutionPolicy.Undefined }
+            };
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string PSModulePath { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string[] ExperimentalFeatures { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string LogIdentity { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string LogLevel { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string LogChannels { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string LogKeywords { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public Dictionary<string, object> ExecutionPolicy { get; set; }
+
+
+        /// <summary>
+        ///
+        /// </summary>
+        public PowerShellPolicies PowerShellPolicies { get; set; } = new PowerShellPolicies()
+        {
+            ScriptExecution = new ScriptExecution() { ExecutionPolicy = Microsoft.PowerShell.ExecutionPolicy.Undefined.ToString(), EnableScripts = false },
+            ScriptBlockLogging = new ScriptBlockLogging() { EnableScriptBlockInvocationLogging = false, EnableScriptBlockLogging = false },
+            ModuleLogging = new ModuleLogging() { EnableModuleLogging = false, ModuleNames = null },
+            Transcription = new Transcription() { EnableTranscripting = false, EnableInvocationHeader = null },
+            UpdatableHelp = new UpdatableHelp() { EnableUpdateHelpDefaultSourcePath = false, DefaultSourcePath = null },
+            ConsoleSessionConfiguration = new ConsoleSessionConfiguration() { EnableConsoleSessionConfiguration = false, ConsoleSessionConfigurationName = null },
+            ProtectedEventLogging = new ProtectedEventLogging() { EnableProtectedEventLogging = false, EncryptionCertificate = null }
+        };
+    }
+
     #region GroupPolicy Configs
 
     /// <summary>
@@ -609,80 +688,163 @@ namespace System.Management.Automation.Configuration
     ///   }
     /// }
     /// </summary>
-    internal sealed class PowerShellPolicies
+    public sealed class PowerShellPolicies
     {
+        /// <summary>
+        ///
+        /// </summary>
         public ScriptExecution ScriptExecution { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public ScriptBlockLogging ScriptBlockLogging { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public ModuleLogging ModuleLogging { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public ProtectedEventLogging ProtectedEventLogging { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public Transcription Transcription { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public UpdatableHelp UpdatableHelp { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public ConsoleSessionConfiguration ConsoleSessionConfiguration { get; set; }
     }
 
-    internal abstract class PolicyBase { }
+    /// <summary>
+    ///
+    /// </summary>
+    public abstract class PolicyBase { }
 
     /// <summary>
     /// Setting about ScriptExecution.
     /// </summary>
-    internal sealed class ScriptExecution : PolicyBase
+    public sealed class ScriptExecution : PolicyBase
     {
+        /// <summary>
+        ///
+        /// </summary>
         public string ExecutionPolicy { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public bool? EnableScripts { get; set; }
     }
 
     /// <summary>
     /// Setting about ScriptBlockLogging.
     /// </summary>
-    internal sealed class ScriptBlockLogging : PolicyBase
+    public sealed class ScriptBlockLogging : PolicyBase
     {
+        /// <summary>
+        ///
+        /// </summary>
         public bool? EnableScriptBlockInvocationLogging { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public bool? EnableScriptBlockLogging { get; set; }
     }
 
     /// <summary>
     /// Setting about ModuleLogging.
     /// </summary>
-    internal sealed class ModuleLogging : PolicyBase
+    public sealed class ModuleLogging : PolicyBase
     {
+        /// <summary>
+        ///
+        /// </summary>
         public bool? EnableModuleLogging { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public string[] ModuleNames { get; set; }
     }
 
     /// <summary>
     /// Setting about Transcription.
     /// </summary>
-    internal sealed class Transcription : PolicyBase
+    public sealed class Transcription : PolicyBase
     {
+        /// <summary>
+        ///
+        /// </summary>
         public bool? EnableTranscripting { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public bool? EnableInvocationHeader { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public string OutputDirectory { get; set; }
     }
 
     /// <summary>
     /// Setting about UpdatableHelp.
     /// </summary>
-    internal sealed class UpdatableHelp : PolicyBase
+    public sealed class UpdatableHelp : PolicyBase
     {
+        /// <summary>
+        ///
+        /// </summary>
         public bool? EnableUpdateHelpDefaultSourcePath { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public string DefaultSourcePath { get; set; }
     }
 
     /// <summary>
     /// Setting about ConsoleSessionConfiguration.
     /// </summary>
-    internal sealed class ConsoleSessionConfiguration : PolicyBase
+    public sealed class ConsoleSessionConfiguration : PolicyBase
     {
+        /// <summary>
+        ///
+        /// </summary>
         public bool? EnableConsoleSessionConfiguration { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public string ConsoleSessionConfigurationName { get; set; }
     }
 
     /// <summary>
     /// Setting about ProtectedEventLogging.
     /// </summary>
-    internal sealed class ProtectedEventLogging : PolicyBase
+    public sealed class ProtectedEventLogging : PolicyBase
     {
+        /// <summary>
+        ///
+        /// </summary>
         public bool? EnableProtectedEventLogging { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         public string[] EncryptionCertificate { get; set; }
     }
 
