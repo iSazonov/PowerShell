@@ -111,6 +111,33 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <StronglyTypedOutputFolder>gen</StronglyTypedOutputFolder>
+  </PropertyGroup>
+
+  <Target Name="CreateDirectories" BeforeTargets="BeforeResGen">
+    <Message Text="****** ------ -Gp- ------ *********" />
+    <MakeDir
+       Directories="gen"/>
+    <MakeDir
+       Directories="$(StronglyTypedOutputFolder)"/>
+  </Target>
+
+  <ItemGroup>
+    <EmbeddedResource Update="resources/*.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <StronglyTypedFileName>$(StronglyTypedOutputFolder)/%(Filename).cs</StronglyTypedFileName>
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedClassName>%(Filename)</StronglyTypedClassName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="$(StronglyTypedOutputFolder)/*.cs">
+      <!-- Above EmbeddedResource already added these files into 'Compile' so remove duplicates. -->
+    </Compile>
+  </ItemGroup>
+
+  <PropertyGroup>
     <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
     <IsWindows Condition="'$(IsWindows)' =='true' or ( '$(IsWindows)' == '' and '$(OS)' == 'Windows_NT')">true</IsWindows>
   </PropertyGroup>
