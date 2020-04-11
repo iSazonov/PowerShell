@@ -111,12 +111,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <StronglyTypedOutputFolder>gen</StronglyTypedOutputFolder>
+    <StronglyTypedOutputFolder>obj\gen</StronglyTypedOutputFolder>
   </PropertyGroup>
 
   <Target Name="CreateDirectories" BeforeTargets="BeforeResGen">
-    <MakeDir
-       Directories="gen"/>
     <MakeDir
        Directories="$(StronglyTypedOutputFolder)"/>
   </Target>
@@ -128,13 +126,9 @@
       <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
       <StronglyTypedClassName>%(Filename)</StronglyTypedClassName>
       <PublicClass>$([System.String]::new('%(Filename)').StartsWith('Public', System.StringComparison.OrdinalIgnoreCase))</PublicClass>
+      <StronglyTypedFileName Condition = "'%(PublicClass)' == 'true'">$(StronglyTypedOutputFolder)/$([System.String]::Copy('%(Filename)').Substring(7)).cs</StronglyTypedFileName>
+      <StronglyTypedClassName Condition = "'%(PublicClass)' == 'true'">$([System.String]::Copy('%(Filename)').Substring(7))</StronglyTypedClassName>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="$(StronglyTypedOutputFolder)/*.cs">
-      <!-- Above EmbeddedResource already added these files into 'Compile' so remove duplicates. -->
-    </Compile>
   </ItemGroup>
 
   <PropertyGroup>
