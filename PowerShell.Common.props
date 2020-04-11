@@ -115,7 +115,6 @@
   </PropertyGroup>
 
   <Target Name="CreateDirectories" BeforeTargets="BeforeResGen">
-    <Message Text="****** ------ -Gp- ------ *********" />
     <MakeDir
        Directories="gen"/>
     <MakeDir
@@ -128,6 +127,7 @@
       <StronglyTypedFileName>$(StronglyTypedOutputFolder)/%(Filename).cs</StronglyTypedFileName>
       <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
       <StronglyTypedClassName>%(Filename)</StronglyTypedClassName>
+      <PublicClass>$([System.String]::new('%(Filename)').StartsWith('Public', System.StringComparison.OrdinalIgnoreCase))</PublicClass>
     </EmbeddedResource>
   </ItemGroup>
 
