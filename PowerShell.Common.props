@@ -114,13 +114,13 @@
     <StronglyTypedOutputFolder>obj\gen</StronglyTypedOutputFolder>
   </PropertyGroup>
 
-  <Target Name="CreateDirectories" BeforeTargets="BeforeResGen">
+  <Target Name = "CreateDirectories" BeforeTargets = "BeforeResGen">
     <MakeDir
-       Directories="$(StronglyTypedOutputFolder)"/>
+       Directories = "$(StronglyTypedOutputFolder)"/>
   </Target>
 
   <ItemGroup>
-    <EmbeddedResource Update="resources/*.resx">
+    <EmbeddedResource Update = "resources/*.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <StronglyTypedFileName>$(StronglyTypedOutputFolder)/%(Filename).cs</StronglyTypedFileName>
       <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>

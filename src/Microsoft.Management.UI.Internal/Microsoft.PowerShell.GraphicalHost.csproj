@@ -1,5 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop" ToolsVersion="15.0">
-  <Import Project="..\..\PowerShell.Common.props" />
+<Project ToolsVersion="15.0">
   <PropertyGroup>
     <Description>Assembly containing WPF code for Out-GridView, HelpWindow, and Show-Command</Description>
     <NoWarn>$(NoWarn);CS1570</NoWarn>
@@ -8,7 +7,23 @@
     <UseWPF>True</UseWPF>
   </PropertyGroup>
 
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk.WindowsDesktop" />
+  <Import Project="..\..\PowerShell.Common.props" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk.WindowsDesktop" />
+
   <PropertyGroup>
+    <MSBuildTargetsVerbose>true</MSBuildTargetsVerbose>
+    <PrepareResourcesDependsOn>
+      MarkupCompilePass1;
+      AfterMarkupCompilePass1;
+      FileClassification;
+      MainResourcesGeneration;
+      ResolvePackageDependenciesForBuild;
+      _HandlePackageFileConflicts;
+      PrepareResourceNames;
+      ResGen;
+      CompileLicxFiles
+    </PrepareResourcesDependsOn>
     <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
   </PropertyGroup>
 
@@ -25,6 +40,10 @@
     <Resource Include="resources\Graphics\SortAdornerDescending.png" />
     <Resource Include="resources\Graphics\SpyGlass10.png" />
     <Resource Include="resources\Graphics\SpyGlass16.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include = "obj\gen\*.cs" KeepDuplicates="false" />
   </ItemGroup>
 
   <ItemGroup>
