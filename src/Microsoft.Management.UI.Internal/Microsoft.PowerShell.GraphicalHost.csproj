@@ -1,12 +1,15 @@
-<Project ToolsVersion="15.0">
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop" ToolsVersion="15.0">
+  <Import Project="..\..\PowerShell.Common.props" />
   <PropertyGroup>
     <Description>Assembly containing WPF code for Out-GridView, HelpWindow, and Show-Command</Description>
     <NoWarn>$(NoWarn);CS1570</NoWarn>
     <RootNamespace>Microsoft.Management.UI.Internal</RootNamespace>
     <AssemblyName>Microsoft.PowerShell.GraphicalHost</AssemblyName>
     <UseWPF>True</UseWPF>
+    <SkipStronglyTyped>true</SkipStronglyTyped>
   </PropertyGroup>
 
+ <!--
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk.WindowsDesktop" />
   <Import Project="..\..\PowerShell.Common.props" />
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk.WindowsDesktop" />
@@ -26,7 +29,7 @@
     </PrepareResourcesDependsOn>
     <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
   </PropertyGroup>
-
+-->
   <ItemGroup>
     <Resource Include="resources\Graphics\Add16.png" />
     <Resource Include="resources\Graphics\CloseTile16.png" />
@@ -41,12 +44,6 @@
     <Resource Include="resources\Graphics\SpyGlass10.png" />
     <Resource Include="resources\Graphics\SpyGlass16.png" />
   </ItemGroup>
-
-<!--
-  <ItemGroup>
-    <Compile Include = "obj\gen\*.cs" KeepDuplicates="false" />
-  </ItemGroup>
--->
 
   <ItemGroup>
     <ProjectReference Include="..\System.Management.Automation\System.Management.Automation.csproj" />

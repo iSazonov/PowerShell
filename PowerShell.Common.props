@@ -110,19 +110,8 @@
     <HighEntropyVA>true</HighEntropyVA>
   </PropertyGroup>
 
-<!--
-  <PropertyGroup>
-    <StronglyTypedOutputFolder>obj\gen</StronglyTypedOutputFolder>
-  </PropertyGroup>
-
-  <Target Name = "CreateDirectories" BeforeTargets = "BeforeResGen">
-    <MakeDir
-       Directories = "$(StronglyTypedOutputFolder)"/>
-  </Target>
--->
-
   <ItemGroup>
-    <EmbeddedResource Update = "resources/*.resx">
+    <EmbeddedResource Update = "resources/*.resx" Condition = "'$(SkipStronglyTyped)' != 'true'">
     <!-- EmbeddedResource Update = "resources/*.resx" ManifestResourceName = "Microsoft.PowerShell.CoreCLR.Eventing" -->
       <!-- ManifestResourceName>qqq</ManifestResourceName -->
       <StronglyTypedManifestPrefix>$(MSBuildProjectName).resources</StronglyTypedManifestPrefix>
