@@ -110,6 +110,7 @@
     <HighEntropyVA>true</HighEntropyVA>
   </PropertyGroup>
 
+<!--
   <PropertyGroup>
     <StronglyTypedOutputFolder>obj\gen</StronglyTypedOutputFolder>
   </PropertyGroup>
@@ -118,16 +119,18 @@
     <MakeDir
        Directories = "$(StronglyTypedOutputFolder)"/>
   </Target>
+-->
 
   <ItemGroup>
     <EmbeddedResource Update = "resources/*.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <StronglyTypedFileName>$(StronglyTypedOutputFolder)/%(Filename).cs</StronglyTypedFileName>
-      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+    <!-- EmbeddedResource Update = "resources/*.resx" ManifestResourceName = "Microsoft.PowerShell.CoreCLR.Eventing" -->
+      <!-- ManifestResourceName>qqq</ManifestResourceName -->
+      <StronglyTypedManifestPrefix>$(MSBuildProjectName).resources</StronglyTypedManifestPrefix>
+      <!-- StronglyTypedFileName>$(IntermediateOutputPath)%(Filename).cs</StronglyTypedFileName -->
       <StronglyTypedClassName>%(Filename)</StronglyTypedClassName>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
       <PublicClass>$([System.String]::new('%(Filename)').StartsWith('Public', System.StringComparison.OrdinalIgnoreCase))</PublicClass>
-      <StronglyTypedFileName Condition = "'%(PublicClass)' == 'true'">$(StronglyTypedOutputFolder)/$([System.String]::Copy('%(Filename)').Substring(7)).cs</StronglyTypedFileName>
-      <StronglyTypedClassName Condition = "'%(PublicClass)' == 'true'">$([System.String]::Copy('%(Filename)').Substring(7))</StronglyTypedClassName>
     </EmbeddedResource>
   </ItemGroup>
 

@@ -42,9 +42,11 @@
     <Resource Include="resources\Graphics\SpyGlass16.png" />
   </ItemGroup>
 
+<!--
   <ItemGroup>
     <Compile Include = "obj\gen\*.cs" KeepDuplicates="false" />
   </ItemGroup>
+-->
 
   <ItemGroup>
     <ProjectReference Include="..\System.Management.Automation\System.Management.Automation.csproj" />
