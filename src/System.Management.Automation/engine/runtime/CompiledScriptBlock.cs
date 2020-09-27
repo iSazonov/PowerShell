@@ -16,6 +16,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 #if LEGACYTELEMETRY
 using Microsoft.PowerShell.Telemetry.Internal;
 #endif
@@ -39,17 +40,233 @@ namespace System.Management.Automation
 
     internal class CompiledScriptBlockData
     {
-        private static readonly ConditionalWeakTable<CompiledScriptBlockData, CompiledScriptBlockData> s_LiveScriptBlockTable
-            = new ConditionalWeakTable<CompiledScriptBlockData, CompiledScriptBlockData>();
+        internal class ProfilerCache : ICollection<CompiledScriptBlockData>, IDisposable
+        {
+            private readonly ReaderWriterLockSlim _lock =
+                new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
-        internal static ConditionalWeakTable<CompiledScriptBlockData, CompiledScriptBlockData> GetCompiledScriptBlockTable() => s_LiveScriptBlockTable;
+            private readonly Dictionary<CompiledScriptBlockData, LinkedListNode<CompiledScriptBlockData>> _entries =
+                new Dictionary<CompiledScriptBlockData, LinkedListNode<CompiledScriptBlockData>>(EqualityComparer<CompiledScriptBlockData>.Default);
+
+            private readonly LinkedList<CompiledScriptBlockData> _order =
+                new LinkedList<CompiledScriptBlockData>();
+
+            public int Count
+            {
+                get {
+                    _lock.EnterReadLock();
+                    try
+                    {
+                        return _entries.Count;
+                    }
+                    finally
+                    {
+                        if (_lock.IsReadLockHeld)
+                        {
+                            _lock.ExitReadLock();
+                        }
+                    }
+                }
+            }
+
+            public virtual bool IsReadOnly
+            {
+                get { return false; }
+            }
+
+            void ICollection<CompiledScriptBlockData>.Add(CompiledScriptBlockData item)
+            {
+                Add(item);
+            }
+
+            public bool Add(CompiledScriptBlockData item)
+            {
+                _lock.EnterUpgradeableReadLock();
+                try
+                {
+                    if (!_entries.ContainsKey(item))
+                    {
+                        _lock.EnterWriteLock();
+                        try
+                        {
+                            _entries.Add(item, _order.AddLast(item));
+                            return true;
+                        }
+                        finally
+                        {
+                            if (_lock.IsWriteLockHeld)
+                            {
+                                _lock.ExitWriteLock();
+                            }
+                        }
+                    }
+
+                    return false;
+                }
+                finally
+                {
+                    if (_lock.IsUpgradeableReadLockHeld)
+                    {
+                        _lock.ExitUpgradeableReadLock();
+                    }
+                }
+            }
+
+            public void Clear()
+            {
+                _lock.EnterWriteLock();
+                try
+                {
+                    _entries.Clear();
+                    _order.Clear();
+                }
+                finally
+                {
+                    if (_lock.IsWriteLockHeld)
+                    {
+                        _lock.ExitWriteLock();
+                    }
+                }
+            }
+
+            public bool Remove(CompiledScriptBlockData item)
+            {
+                _lock.EnterUpgradeableReadLock();
+                try
+                {
+                    if (_entries.TryGetValue(item, out LinkedListNode<CompiledScriptBlockData> node))
+                    {
+                        _lock.EnterWriteLock();
+                        try
+                        {
+                            _entries.Remove(item);
+                            _order.Remove(node);
+
+                            return true;
+                        }
+                        finally
+                        {
+                            if (_lock.IsWriteLockHeld)
+                            {
+                                _lock.ExitWriteLock();
+                            }
+                        }
+                    }
+
+                    return false;
+                }
+                finally
+                {
+                    if (_lock.IsUpgradeableReadLockHeld)
+                    {
+                        _lock.ExitUpgradeableReadLock();
+                    }
+                }
+            }
+
+            public IEnumerator<CompiledScriptBlockData> GetEnumerator()
+            {
+                _lock.EnterReadLock();
+                try
+                {
+                    var output = new CompiledScriptBlockData[Count];
+                    CopyTo(output, 0);
+                    return ((IEnumerable<CompiledScriptBlockData>)output).GetEnumerator();
+                }
+                finally
+                {
+                    if (_lock.IsReadLockHeld)
+                    {
+                        _lock.ExitReadLock();
+                    }
+                }
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            public bool Contains(CompiledScriptBlockData item)
+            {
+                _lock.EnterReadLock();
+                try
+                {
+                    return _entries.ContainsKey(item);
+                }
+                finally
+                {
+                    if (_lock.IsReadLockHeld)
+                    {
+                        _lock.ExitReadLock();
+                    }
+                }
+            }
+
+            public void CopyTo(CompiledScriptBlockData[] array, int arrayIndex)
+            {
+                _lock.EnterReadLock();
+                try
+                {
+                    _order.CopyTo(array, arrayIndex);
+                }
+                finally
+                {
+                    if (_lock.IsReadLockHeld)
+                    {
+                        _lock.ExitReadLock();
+                    }
+                }
+            }
+
+            #region Dispose
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            protected virtual void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    if (_lock != null)
+                    {
+                        _lock.Dispose();
+                    }
+                }
+            }
+
+            ~ProfilerCache()
+            {
+                Dispose(false);
+            }
+            #endregion
+
+        }
+
+        private static readonly ProfilerCache s_ProfilerCache
+            = new ProfilerCache();
+
+        internal static IEnumerable<CompiledScriptBlockData> GetProfilerCache() => s_ProfilerCache;
 
         internal CompiledScriptBlockData(IParameterMetadataProvider ast, bool isFilter)
         {
             _ast = ast;
             IsFilter = isFilter;
             Id = Guid.NewGuid();
-            s_LiveScriptBlockTable.Add(this, this);
+            CacheCompiledScriptBlockData();
+        }
+
+        internal static void ClearProfilerCache()
+        {
+            s_ProfilerCache.Clear();
+        }
+
+        internal void CacheCompiledScriptBlockData()
+        {
+            if (ProfilerEventSource.LogInstance.IsEnabled())
+                s_ProfilerCache.Add(this);
         }
 
         internal CompiledScriptBlockData(string scriptText, bool isProductCode)
@@ -57,7 +274,7 @@ namespace System.Management.Automation
             _isProductCode = isProductCode;
             _scriptText = scriptText;
             Id = Guid.NewGuid();
-            s_LiveScriptBlockTable.Add(this, this);
+            CacheCompiledScriptBlockData();
         }
 
         internal bool Compile(bool optimized)
@@ -604,6 +821,9 @@ namespace System.Management.Automation
             // The definition of the dynamic keyword could change, consequently changing how the source text should be parsed.
             // Exported types definitions from 'using module' could change, we need to do all parse-time checks again.
             // TODO(sevoroby): we can optimize it to ignore 'using' if there are no actual type usage in locally defined types.
+
+            if (scriptBlock._scriptBlockData is CompiledScriptBlockData csbd)
+                csbd.CacheCompiledScriptBlockData();
 
             // using is always a top-level statements in scriptBlock, we don't need to search in child blocks.
             if (scriptBlock.Ast.Find(ast => IsUsingTypes(ast), false) != null

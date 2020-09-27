@@ -3,6 +3,7 @@
 
 #nullable enable
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Management.Automation.Internal;
@@ -19,7 +20,7 @@ namespace System.Management.Automation
         internal static ProfilerEventSource LogInstance = new ProfilerEventSource();
 
         [Event(1)]
-        public void SequencePoint(Guid ScriptBlockId, int SequencePointPosition)
+        public void SequencePoint(Guid ScriptBlockId, Guid RunspaceInstanceId, int SequencePointPosition)
         {
             // We could use:
             // WriteEvent(eventId: 1, ScriptBlockId, SequencePointPosition);
@@ -28,7 +29,7 @@ namespace System.Management.Automation
             {
                 unsafe
                 {
-                    EventData* eventPayload = stackalloc EventData[2];
+                    EventData* eventPayload = stackalloc EventData[3];
 
                     eventPayload[0] = new EventData
                     {
@@ -37,23 +38,39 @@ namespace System.Management.Automation
                     };
                     eventPayload[1] = new EventData
                     {
+                        Size = sizeof(Guid),
+                        DataPointer = ((IntPtr)(&RunspaceInstanceId))
+                    };
+                    eventPayload[2] = new EventData
+                    {
                         Size = sizeof(int),
                         DataPointer = ((IntPtr)(&SequencePointPosition))
                     };
 
-                    WriteEventCore(eventId: 1, eventDataCount: 2, eventPayload);
+                    WriteEventCore(eventId: 1, eventDataCount: 3, eventPayload);
                 }
             }
         }
 
+        private readonly object _cacheLock = new object();
+
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
             base.OnEventCommand(command);
-
             if (command.Command == EventCommand.Disable)
             {
                 // At the end of the profile session, we send all the metadata.
                 ProfilerRundownEventSource.LogInstance.WriteRundownEvents();
+
+                // Ensure atomic IsEnabled() + Clear() operation
+                lock (_cacheLock)
+                {
+                    // Was this the last listener? Let's clean up!
+                    if (!IsEnabled())
+                    {
+                        CompiledScriptBlockData.ClearProfilerCache();
+                    }
+                }
             }
         }
     }
@@ -112,9 +129,8 @@ namespace System.Management.Automation
         [NonEvent]
         internal void WriteRundownEvents()
         {
-            foreach (var pair in CompiledScriptBlockData.GetCompiledScriptBlockTable())
+            foreach (var compiledScriptBlock in CompiledScriptBlockData.GetProfilerCache())
             {
-                var compiledScriptBlock = pair.Key;
                 ScriptBlockRundown(compiledScriptBlock.Id, compiledScriptBlock.Ast.Body.Extent.Text);
 
                 if (compiledScriptBlock.SequencePoints is null)
@@ -194,7 +210,7 @@ namespace System.Management.Automation
     /// <summary>
     /// This class is PowerShell script block profiler.
     /// </summary>
-    internal class InternalProfiler : EventListener
+    internal sealed class InternalProfiler : EventListener
     {
         /// <summary>
         /// Represents a SequencePoint profile event data.
@@ -212,6 +228,11 @@ namespace System.Management.Automation
             /// Unique identifer of the script block.
             /// </summary>
             public Guid ScriptId;
+
+            /// <summary>
+            /// Unique identifier of the invoking runspace instance.
+            /// </summary>
+            public Guid RunspaceId;
 
             /// <summary>
             /// SequencePoint index number/position of the script block.
@@ -246,8 +267,31 @@ namespace System.Management.Automation
         // Buffer to collect a performance event data.
         internal List<SequencePointProfileEventData> SequencePointProfileEvents = new List<SequencePointProfileEventData>(5000);
 
+        // Buffer to collect a performance event data.
+        internal List<ProfilerError> ProfilerExceptions = new List<ProfilerError>();
+
         // Buffer to collect a script block meta data.
-        internal Dictionary<Guid, CompiledScriptBlockRundownProfileEventData> CompiledScriptBlockMetaData = new Dictionary<Guid, CompiledScriptBlockRundownProfileEventData>(5000);
+        internal ConcurrentDictionary<Guid, CompiledScriptBlockRundownProfileEventData> CompiledScriptBlockMetaData =
+            new ConcurrentDictionary<Guid, CompiledScriptBlockRundownProfileEventData>(Environment.ProcessorCount, 5000);
+
+        internal class ProfilerError
+        {
+            public string? Message;
+            public EventSource EventSource;
+            public DateTime TimeStamp;
+
+            internal ProfilerError(EventWrittenEventArgs eventData)
+            {
+                Message = eventData.Message;
+                EventSource = eventData.EventSource;
+                TimeStamp = eventData.TimeStamp;
+            }
+
+            public override string ToString()
+            {
+                return $"[{TimeStamp}] {EventSource}: {Message}";
+            }
+        }
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
@@ -260,13 +304,18 @@ namespace System.Management.Automation
 
             switch (eventData.EventId)
             {
+                case 0:
+                    // EventSource exceptions
+                    ProfilerExceptions.Add(new ProfilerError(eventData));
+                    break;
                 case 1:
                     // Performance event
                     SequencePointProfileEvents.Add(new SequencePointProfileEventData
                     {
                         Timestamp = eventData.TimeStamp,
                         ScriptId = (Guid)payload[0]!,
-                        SequencePointPosition = (int)payload[1]!
+                        RunspaceId = (Guid)payload[1]!,
+                        SequencePointPosition = (int)payload[2]!
                     });
                     break;
                 case 2:
@@ -331,6 +380,7 @@ namespace System.Management.Automation
     /// The cmdlet profiles a script block.
     /// </summary>
     [Cmdlet(VerbsDiagnostic.Measure, "Script", RemotingCapability = RemotingCapability.None)]
+    [OutputType(typeof(ProfileEventRecord))]
     public class MeasureScriptCommand : PSCmdlet
     {
         /// <summary>
@@ -340,15 +390,25 @@ namespace System.Management.Automation
         public ScriptBlock ScriptBlock { get; set; } = null!;
 
         /// <summary>
+        /// When present, returns events from all runspaces
+        /// </summary>
+        [Parameter()]
+        public SwitchParameter AllEvents { get; set; } = false;
+
+        /// <summary>
         /// Process a profile data.
         /// </summary>
         protected override void EndProcessing()
         {
+            var runspaceInstanceId = this.Context.CurrentRunspace.InstanceId;
             using (var profiler = new InternalProfiler())
             {
                 try
                 {
                     profiler.EnableEvents();
+
+                    // Force "re-caching" root scriptblock after enabling events
+                    ScriptBlock.CacheScriptBlock(ScriptBlock, null, ScriptBlock.ToString());
 
                     ScriptBlock.InvokeWithPipe(
                         useLocalScope: false,
@@ -364,7 +424,22 @@ namespace System.Management.Automation
                     profiler.DisableEvents();
                 }
 
-                var events = profiler.SequencePointProfileEvents;
+                List<InternalProfiler.SequencePointProfileEventData> events = new List<InternalProfiler.SequencePointProfileEventData>();
+                foreach (var profileEvent in profiler.SequencePointProfileEvents)
+                {
+                    // Measure-Script only consumes events from its own runspace by default
+                    if (AllEvents.IsPresent || profileEvent.RunspaceId == runspaceInstanceId)
+                    {
+                        events.Add(profileEvent);
+                    }
+                }
+
+                // Error reporting needs a bit of work...
+                foreach (var error in profiler.ProfilerExceptions)
+                {
+                    WriteError(new ErrorRecord(null, error.ToString(), ErrorCategory.MetadataError, null));
+                }
+
                 if (events.Count == 0)
                 {
                     return;
@@ -382,21 +457,54 @@ namespace System.Management.Automation
 
                 for (var i = 0; i < events.Count - 1; i++)
                 {
-                    var profileDate = events[i];
-                    if (metaData.TryGetValue(profileDate.ScriptId, out var compiledScriptBlockData))
+                    var profileData = events[i];
+                    if (metaData.TryGetValue(profileData.ScriptId, out var compiledScriptBlockData))
                     {
-                        var extent = compiledScriptBlockData.SequencePoints[profileDate.SequencePointPosition];
+                        var extent = compiledScriptBlockData.SequencePoints[profileData.SequencePointPosition];
 
-                        PSObject result = new PSObject();
-                        result.Properties.Add(new PSNoteProperty("TimeStamp", profileDate.Timestamp.TimeOfDay));
-                        result.Properties.Add(new PSNoteProperty("Duration", events[i + 1].Timestamp - profileDate.Timestamp));
-                        result.Properties.Add(new PSNoteProperty("ExtentText", extent.Text));
-                        result.Properties.Add(new PSNoteProperty("Extent", extent));
-
+                        var result = new ProfileEventRecord
+                        {
+                            StartTime = profileData.Timestamp.TimeOfDay,
+                            Duration = events[i + 1].Timestamp - profileData.Timestamp,
+                            Source = extent.Text,
+                            Extent = extent,
+                            RunspaceId = runspaceInstanceId
+                        };
                         WriteObject(result);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Measure-ScriptBlock output type
+        /// </summary>
+        internal struct ProfileEventRecord
+        {
+            /// <summary>
+            /// StartTime of event
+            /// </summary>
+            public TimeSpan StartTime;
+
+            /// <summary>
+            /// Duration of event
+            /// </summary>
+            public TimeSpan Duration;
+
+            /// <summary>
+            /// Script text
+            /// </summary>
+            public string Source;
+
+            /// <summary>
+            /// Script Extent
+            /// </summary>
+            public ScriptExtentEventData Extent;
+
+            /// <summary>
+            /// Executing runspace instance identifier
+            /// </summary>
+            public Guid RunspaceId;
         }
     }
 }
