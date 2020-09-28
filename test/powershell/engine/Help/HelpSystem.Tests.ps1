@@ -16,7 +16,8 @@ $script:cmdletsToSkip = @(
     "Get-ExperimentalFeature",
     "Enable-ExperimentalFeature",
     "Disable-ExperimentalFeature",
-    "Get-PSSubsystem"
+    "Get-PSSubsystem",
+    "Measure-Script"
 )
 
 function UpdateHelpFromLocalContentPath {
