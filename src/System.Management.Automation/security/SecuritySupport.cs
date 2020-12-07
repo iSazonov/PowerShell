@@ -13,6 +13,7 @@ using System.Globalization;
 using System.Management.Automation.Configuration;
 using System.Management.Automation.Internal;
 using System.Management.Automation.Security;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -1339,7 +1340,7 @@ namespace System.Management.Automation
     {
         private static string GetProcessHostName(string processName)
         {
-            return string.Concat("PowerShell_", processName, ".exe_0.0.0.0");
+            return string.Concat("PowerShell_", processName, "_0.0.0.0");
         }
 
         internal static int Init()
@@ -1348,23 +1349,15 @@ namespace System.Management.Automation
 
             lock (s_amsiLockObject)
             {
-                Process currentProcess = Process.GetCurrentProcess();
                 string hostname;
-                try
+                Process currentProcess = Process.GetCurrentProcess();
+                AssemblyInformationalVersionAttribute assemblyInformationalVersion = typeof(AmsiUtils).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+                if (assemblyInformationalVersion is not null)
                 {
-                    var processModule = PsUtils.GetMainModule(currentProcess);
-                    hostname = string.Concat("PowerShell_", processModule.FileName, "_",
-                        processModule.FileVersionInfo.ProductVersion);
+                    hostname = string.Concat("PowerShell_", currentProcess.ProcessName, "_", assemblyInformationalVersion.InformationalVersion);
                 }
-                catch (ComponentModel.Win32Exception)
+                else
                 {
-                    // This exception can be thrown during thread impersonation (Access Denied for process module access).
-                    hostname = GetProcessHostName(currentProcess.ProcessName);
-                }
-                catch (FileNotFoundException)
-                {
-                    // This exception can occur if the file is renamed or moved to some other folder
-                    // (This has occurred during Exchange set up).
                     hostname = GetProcessHostName(currentProcess.ProcessName);
                 }
 
