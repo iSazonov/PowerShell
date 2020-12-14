@@ -540,7 +540,7 @@ namespace System.Management.Automation.Configuration
 
                 // Reset the stream position to the beginning so that the
                 // changes to the file can be written to disk
-                stream.Seek(0, SeekOrigin.Begin);
+                stream.SetLength(0);
 
                 // Update the file with new content
                 using var streamWriter = new StreamWriter(stream);
