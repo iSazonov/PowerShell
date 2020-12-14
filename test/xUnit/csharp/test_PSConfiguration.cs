@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Management.Automation;
 using System.Management.Automation.Configuration;
@@ -9,7 +10,6 @@ using System.Management.Automation.Internal;
 using System.Reflection;
 using System.Threading;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using PSTests.Internal;
 using Xunit;
 
@@ -99,7 +99,7 @@ namespace PSTests.Sequential
         {
             Dispose(true);
             GC.SuppressFinalize(this);
-        }        
+        }
 
         protected virtual void Dispose(bool disposing)
         {
@@ -390,8 +390,8 @@ namespace PSTests.Sequential
         internal void ForceReadingFromFile()
         {
             // Reset the cached roots.
-            FieldInfo roots = typeof(PowerShellConfig).GetField("configRoots", BindingFlags.NonPublic | BindingFlags.Instance);
-            JObject[] value = (JObject[])roots.GetValue(PowerShellConfig.Instance);
+            FieldInfo roots = typeof(PowerShellConfig).GetField("configScopeRoots", BindingFlags.NonPublic | BindingFlags.Instance);
+            Dictionary<string, System.Text.Json.JsonElement>[] value = (Dictionary<string, System.Text.Json.JsonElement>[])roots.GetValue(PowerShellConfig.Instance);
             value[0] = null;
             value[1] = null;
         }

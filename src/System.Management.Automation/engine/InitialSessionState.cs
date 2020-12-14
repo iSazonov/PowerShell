@@ -43,6 +43,10 @@ namespace System.Management.Automation.Runspaces
             //   * have high disk cost
 
             // We shouldn't create too many tasks.
+            Task.Run(() =>
+            {
+                using var jsonDocument = System.Text.Json.JsonDocument.Parse("{\"test\":  \"test\"}");
+            });
 #if !UNIX
             // Amsi initialize can be a little slow
             Task.Run(() => AmsiUtils.WinScanContent(content: string.Empty, sourceMetadata: string.Empty, warmUp: true));
