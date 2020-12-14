@@ -3,6 +3,9 @@
 
 using System.Collections.Generic;
 using System.IO;
+#if UNIX
+using System.Management.Automation.Internal;
+#endif
 using System.Text.Json;
 using System.Threading;
 
@@ -586,7 +589,7 @@ namespace System.Management.Automation.Configuration
         }
     }
 
-    #region GroupPolicy Configs
+#region GroupPolicy Configs
 
     /// <summary>
     /// The GroupPolicy related settings used in PowerShell are as follows in Registry:
@@ -723,5 +726,5 @@ namespace System.Management.Automation.Configuration
         public string[] EncryptionCertificate { get; set; }
     }
 
-    #endregion
+#endregion
 }
