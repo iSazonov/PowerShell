@@ -3875,7 +3875,6 @@ namespace System.Management.Automation
             result.Add(CompletionResult.Null);
         }
 
-
         private static void NativeCompletionTypeName(CompletionContext context, List<CompletionResult> result)
         {
             var wordToComplete = context.WordToComplete;
