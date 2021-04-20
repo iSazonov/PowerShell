@@ -1317,7 +1317,7 @@ namespace System.Management.Automation
 
             ProviderInfo provider = null;
 
-            if ((recurse && !context.SuppressWildcardExpansion) || LocationGlobber.ShouldPerformGlobbing(path, context))
+            if ((recurse && !context.SuppressWildcardExpansion && LocationGlobber.StringContainsGlobCharacters(path)) || LocationGlobber.ShouldPerformGlobbing(path, context))
             {
                 bool modifiedInclude = false;
 
