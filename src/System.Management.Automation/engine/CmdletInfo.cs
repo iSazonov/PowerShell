@@ -339,66 +339,110 @@ namespace System.Management.Automation
         {
             get
             {
-                if (_outputType == null)
-                {
-                    _outputType = new List<PSTypeName>();
+                EnsureOutputType();
 
-                    if (ImplementingType != null)
-                    {
-                        foreach (object o in ImplementingType.GetCustomAttributes(typeof(OutputTypeAttribute), false))
-                        {
-                            OutputTypeAttribute attr = (OutputTypeAttribute)o;
-                            _outputType.AddRange(attr.Type);
-                        }
-                    }
-                }
-
-                List<PSTypeName> providerTypes = new List<PSTypeName>();
-
-                if (Context != null)
-                {
-                    ProviderInfo provider = null;
-                    if (Arguments != null)
-                    {
-                        // See if we have a path argument - we only consider named arguments -Path and -LiteralPath,
-                        // and only if they are fully specified (no prefixes allowed, so we don't need to deal with
-                        // ambiguities that the parameter binder would resolve for us.
-
-                        for (int i = 0; i < Arguments.Length - 1; i++)
-                        {
-                            var arg = Arguments[i] as string;
-                            if (arg != null &&
-                                (arg.Equals("-Path", StringComparison.OrdinalIgnoreCase) ||
-                                (arg.Equals("-LiteralPath", StringComparison.OrdinalIgnoreCase))))
-                            {
-                                var path = Arguments[i + 1] as string;
-                                if (path != null)
-                                {
-                                    Context.SessionState.Path.GetResolvedProviderPathFromPSPath(path, true, out provider);
-                                }
-                            }
-                        }
-                    }
-
-                    if (provider == null)
-                    {
-                        // No path argument, so just use the current path to choose the provider.
-                        provider = Context.SessionState.Path.CurrentLocation.Provider;
-                    }
-
-                    provider.GetOutputTypes(Name, providerTypes);
-                    if (providerTypes.Count > 0)
-                    {
-                        providerTypes.InsertRange(0, _outputType);
-                        return new ReadOnlyCollection<PSTypeName>(providerTypes);
-                    }
-                }
-
-                return new ReadOnlyCollection<PSTypeName>(_outputType);
+                return new ReadOnlyCollection<PSTypeName>(AddProviderOutPutTypes());
             }
         }
 
-        private List<PSTypeName> _outputType = null;
+        /// <summary>
+        /// Return the output types per parameter set specified on the cmdlet.
+        /// </summary>
+        internal ReadOnlyDictionary<string, List<PSTypeName>> OutputTypesPerParameterSet
+        {
+            get
+            {
+                EnsureOutputType();
+
+                return new ReadOnlyDictionary<string, List<PSTypeName>>(_outputTypesPerParameterSet);
+            }
+        }
+
+        private Dictionary<string, List<PSTypeName>> _outputTypesPerParameterSet;
+
+        private void EnsureOutputType()
+        {
+            if (_outputTypesPerParameterSet is not null)
+            {
+                return;
+            }
+
+            _outputTypesPerParameterSet = new Dictionary<string, List<PSTypeName>>();
+
+            if (ImplementingType is not null)
+            {
+                var allPSTypeNames = new List<PSTypeName>();
+                foreach (OutputTypeAttribute attr in ImplementingType.GetCustomAttributes(typeof(OutputTypeAttribute), inherit: false))
+                {
+                    allPSTypeNames.AddRange(attr.Type);
+
+                    foreach (string parameterSetName in attr.ParameterSetName)
+                    {
+                        if (!_outputTypesPerParameterSet.TryGetValue(parameterSetName, out List<PSTypeName> outputTypeList))
+                        {
+                            outputTypeList = new List<PSTypeName>();
+                            _outputTypesPerParameterSet[parameterSetName] = outputTypeList;
+                        }
+
+                        outputTypeList.AddRange(attr.Type);
+                    }
+                }
+
+                _outputTypesPerParameterSet[ParameterAttribute.AllParameterSets] = allPSTypeNames;
+            }
+        }
+
+        private ReadOnlyCollection<PSTypeName> AddProviderOutPutTypes()
+        {
+            if (Context is not null)
+            {
+                List<PSTypeName> providerTypes = new List<PSTypeName>();
+
+                ProviderInfo provider = GetProvider();
+
+                provider.GetOutputTypes(Name, providerTypes);
+                if (providerTypes.Count > 0)
+                {
+                    providerTypes.InsertRange(0, _outputTypesPerParameterSet[ParameterAttribute.AllParameterSets]);
+                    return new ReadOnlyCollection<PSTypeName>(providerTypes);
+                }
+            }
+
+            return new ReadOnlyCollection<PSTypeName>(_outputTypesPerParameterSet[ParameterAttribute.AllParameterSets]);
+        }
+
+        private ProviderInfo GetProvider()
+        {
+            ProviderInfo provider = null;
+
+            if (Arguments is not null)
+            {
+                // See if we have a path argument - we only consider named arguments -Path and -LiteralPath,
+                // and only if they are fully specified (no prefixes allowed, so we don't need to deal with
+                // ambiguities that the parameter binder would resolve for us.
+
+                for (int i = 0; i < Arguments.Length - 1; i++)
+                {
+                    if (Arguments[i] is string arg &&
+                        (arg.Equals("-Path", StringComparison.OrdinalIgnoreCase) ||
+                        (arg.Equals("-LiteralPath", StringComparison.OrdinalIgnoreCase))))
+                    {
+                        if (Arguments[i + 1] is string path)
+                        {
+                            Context.SessionState.Path.GetResolvedProviderPathFromPSPath(path, allowNonexistingPaths: true, out provider);
+                        }
+                    }
+                }
+            }
+
+            if (provider is null)
+            {
+                // No path argument, so just use the current path to choose the provider.
+                provider = Context.SessionState.Path.CurrentLocation.Provider;
+            }
+
+            return provider;
+        }
 
         /// <summary>
         /// Gets or sets the scope options for the alias.

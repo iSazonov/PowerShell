@@ -1023,6 +1023,35 @@ namespace System.Management.Automation
                     inferredTypes.AddRange(inferTypesFromObjectCmdlets);
                     return;
                 }
+
+                if (pseudoBinding.ValidParameterSetsFlags == UInt32.MaxValue)
+                {
+                    if (cmdletInfo.ImplementingType != null)
+                    {
+                        inferredTypes.AddRange(cmdletInfo.OutputTypesPerParameterSet[cmdletInfo.DefaultParameterSet]);
+                    }
+                }
+                else
+                {
+                    //cmdletInfo.CommandMetadata.StaticCommandParameterMetadata.AllParameterSetFlags
+                    //cmdletInfo.CommandMetadata.StaticCommandParameterMetadata.GetParameterSetName
+                    foreach (var boundParameter in pseudoBinding.BoundParameters)
+                    {
+                        if ((pseudoBinding.ValidParameterSetsFlags & boundParameter.Value.Parameter.ParameterSetFlags) != 0)
+                        {
+                            foreach (var parameterMetaData in boundParameter.Value.Parameter.ParameterSetData)
+                            {
+                                if ((pseudoBinding.ValidParameterSetsFlags & parameterMetaData.Value.ParameterSetFlag) != 0)
+                                {
+                                    string parameterSetName = parameterMetaData.Key;
+                                    inferredTypes.AddRange(cmdletInfo.OutputTypesPerParameterSet[parameterSetName]);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return;
             }
 
             // The OutputType property ignores the parameter set specified in the OutputTypeAttribute.

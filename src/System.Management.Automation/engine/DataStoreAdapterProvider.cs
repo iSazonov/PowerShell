@@ -642,35 +642,81 @@ namespace System.Management.Automation
         /// </summary>
         internal void GetOutputTypes(string cmdletname, List<PSTypeName> listToAppend)
         {
-            if (_providerOutputType == null)
+            EnsureOutputTypes();
+
+            if (_providerOutputTypesPerCmdletPerParameterSet.TryGetValue(cmdletname, out Dictionary<string, List<PSTypeName>> cmdletOutputTypesPerParameterSet))
             {
-                _providerOutputType = new Dictionary<string, List<PSTypeName>>();
-                foreach (OutputTypeAttribute outputType in ImplementingType.GetCustomAttributes<OutputTypeAttribute>(false))
-                {
-                    if (string.IsNullOrEmpty(outputType.ProviderCmdlet))
-                    {
-                        continue;
-                    }
-
-                    List<PSTypeName> l;
-                    if (!_providerOutputType.TryGetValue(outputType.ProviderCmdlet, out l))
-                    {
-                        l = new List<PSTypeName>();
-                        _providerOutputType[outputType.ProviderCmdlet] = l;
-                    }
-
-                    l.AddRange(outputType.Type);
-                }
-            }
-
-            List<PSTypeName> cmdletOutputType = null;
-            if (_providerOutputType.TryGetValue(cmdletname, out cmdletOutputType))
-            {
-                listToAppend.AddRange(cmdletOutputType);
+                listToAppend.AddRange(cmdletOutputTypesPerParameterSet[ParameterAttribute.AllParameterSets]);
             }
         }
 
-        private Dictionary<string, List<PSTypeName>> _providerOutputType;
+        /// <summary>
+        /// Get the output types per parameter sets specified on this provider for the cmdlet requested.
+        /// </summary>
+        internal void GetOutputTypes(string cmdletname, Dictionary<string, List<PSTypeName>> dictionaryToAppend)
+        {
+            EnsureOutputTypes();
+
+            if (_providerOutputTypesPerCmdletPerParameterSet.TryGetValue(cmdletname, out Dictionary<string, List<PSTypeName>> cmdletOutputTypesPerParameterSet))
+            {
+                foreach (var outputTypesForParameterSet in cmdletOutputTypesPerParameterSet)
+                {
+                    if (dictionaryToAppend.TryGetValue(outputTypesForParameterSet.Key, out List<PSTypeName> listToAppend))
+                    {
+                        listToAppend.AddRange(outputTypesForParameterSet.Value);
+                    }
+                    else
+                    {
+                        dictionaryToAppend.Add(outputTypesForParameterSet.Key, outputTypesForParameterSet.Value);
+                    }
+                }
+            }
+        }
+
+        private void EnsureOutputTypes()
+        {
+            if (_providerOutputTypesPerCmdletPerParameterSet is not null)
+            {
+                return;
+            }
+
+            _providerOutputTypesPerCmdletPerParameterSet = new Dictionary<string, Dictionary<string, List<PSTypeName>>>();
+
+            foreach (OutputTypeAttribute attr in ImplementingType.GetCustomAttributes<OutputTypeAttribute>(false))
+            {
+                if (string.IsNullOrEmpty(attr.ProviderCmdlet))
+                {
+                    continue;
+                }
+
+                if (!_providerOutputTypesPerCmdletPerParameterSet.TryGetValue(attr.ProviderCmdlet, out Dictionary<string, List<PSTypeName>> outputTypesDictionary))
+                {
+                    outputTypesDictionary = new Dictionary<string, List<PSTypeName>>();
+                    _providerOutputTypesPerCmdletPerParameterSet[attr.ProviderCmdlet] = outputTypesDictionary;
+                }
+
+                if (!outputTypesDictionary.TryGetValue(ParameterAttribute.AllParameterSets, out var all))
+                {
+                    all = new List<PSTypeName>();
+                    outputTypesDictionary[ParameterAttribute.AllParameterSets] = all;
+                }
+
+                all.AddRange(attr.Type);
+
+                foreach (var parameterSetName in attr.ParameterSetName)
+                {
+                    if (!outputTypesDictionary.TryGetValue(parameterSetName, out List<PSTypeName> outputTypeList))
+                    {
+                        outputTypeList = new List<PSTypeName>();
+                        outputTypesDictionary[parameterSetName] = outputTypeList;
+                    }
+
+                    outputTypeList.AddRange(attr.Type);
+                }
+            }
+        }
+
+        private Dictionary<string, Dictionary<string, List<PSTypeName>>> _providerOutputTypesPerCmdletPerParameterSet;
 
         private PSNoteProperty _noteProperty;
 
