@@ -1024,29 +1024,40 @@ namespace System.Management.Automation
                     return;
                 }
 
-                if (pseudoBinding.ValidParameterSetsFlags == UInt32.MaxValue)
+                if (cmdletInfo.ImplementingType != null)
                 {
-                    if (cmdletInfo.ImplementingType != null)
+                    if (pseudoBinding.ValidParameterSetsFlags == UInt32.MaxValue)
                     {
-                        inferredTypes.AddRange(cmdletInfo.OutputTypesPerParameterSet[cmdletInfo.DefaultParameterSet]);
+                        inferredTypes.AddRange(cmdletInfo.OutputTypesPerParameterSet[ParameterAttribute.AllParameterSets]);
                     }
-                }
-                else
-                {
-                    //cmdletInfo.CommandMetadata.StaticCommandParameterMetadata.AllParameterSetFlags
-                    //cmdletInfo.CommandMetadata.StaticCommandParameterMetadata.GetParameterSetName
-                    foreach (var boundParameter in pseudoBinding.BoundParameters)
+                    else
                     {
-                        if ((pseudoBinding.ValidParameterSetsFlags & boundParameter.Value.Parameter.ParameterSetFlags) != 0)
+                        // iSazonov: perhaps there is a way to get names of the candidate parameter sets
+                        // without enumeration of parameters.
+                        //
+                        //cmdletInfo.CommandMetadata.StaticCommandParameterMetadata.AllParameterSetFlags
+                        //cmdletInfo.CommandMetadata.StaticCommandParameterMetadata.GetParameterSetName
+                        foreach (var boundParameter in pseudoBinding.BoundParameters)
                         {
-                            foreach (var parameterMetaData in boundParameter.Value.Parameter.ParameterSetData)
+                            if ((pseudoBinding.ValidParameterSetsFlags & boundParameter.Value.Parameter.ParameterSetFlags) != 0)
                             {
-                                if ((pseudoBinding.ValidParameterSetsFlags & parameterMetaData.Value.ParameterSetFlag) != 0)
+                                foreach (var parameterMetaData in boundParameter.Value.Parameter.ParameterSetData)
                                 {
-                                    string parameterSetName = parameterMetaData.Key;
-                                    inferredTypes.AddRange(cmdletInfo.OutputTypesPerParameterSet[parameterSetName]);
+                                    if ((pseudoBinding.ValidParameterSetsFlags & parameterMetaData.Value.ParameterSetFlag) != 0)
+                                    {
+                                        string parameterSetName = parameterMetaData.Key;
+                                        if (cmdletInfo.OutputTypesPerParameterSet.TryGetValue(parameterSetName, out var outputTypes))
+                                        {
+                                            inferredTypes.AddRange(outputTypes);
+                                        }
+                                    }
                                 }
                             }
+                        }
+
+                        if (inferredTypes.Count == 0)
+                        {
+                            inferredTypes.AddRange(cmdletInfo.OutputTypesPerParameterSet[ParameterAttribute.AllParameterSets]);
                         }
                     }
                 }

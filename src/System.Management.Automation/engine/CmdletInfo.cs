@@ -354,7 +354,7 @@ namespace System.Management.Automation
             {
                 EnsureOutputType();
 
-                return new ReadOnlyDictionary<string, List<PSTypeName>>(_outputTypesPerParameterSet);
+                return new ReadOnlyDictionary<string, List<PSTypeName>>(AddProviderOutPutTypesPerParameterSets());
             }
         }
 
@@ -396,19 +396,28 @@ namespace System.Management.Automation
         {
             if (Context is not null)
             {
-                List<PSTypeName> providerTypes = new List<PSTypeName>();
-
+                var providerTypes = new List<PSTypeName>(_outputTypesPerParameterSet[ParameterAttribute.AllParameterSets]);
                 ProviderInfo provider = GetProvider();
-
                 provider.GetOutputTypes(Name, providerTypes);
-                if (providerTypes.Count > 0)
-                {
-                    providerTypes.InsertRange(0, _outputTypesPerParameterSet[ParameterAttribute.AllParameterSets]);
-                    return new ReadOnlyCollection<PSTypeName>(providerTypes);
-                }
+
+                return new ReadOnlyCollection<PSTypeName>(providerTypes);
             }
 
             return new ReadOnlyCollection<PSTypeName>(_outputTypesPerParameterSet[ParameterAttribute.AllParameterSets]);
+        }
+
+        private ReadOnlyDictionary<string, List<PSTypeName>> AddProviderOutPutTypesPerParameterSets()
+        {
+            if (Context is not null)
+            {
+                var providerTypes = new Dictionary<string, List<PSTypeName>>(_outputTypesPerParameterSet);
+                ProviderInfo provider = GetProvider();
+                provider.GetOutputTypes(Name, providerTypes);
+
+                return new ReadOnlyDictionary<string, List<PSTypeName>>(providerTypes);
+            }
+
+            return new ReadOnlyDictionary<string, List<PSTypeName>>(_outputTypesPerParameterSet);
         }
 
         private ProviderInfo GetProvider()
