@@ -695,37 +695,25 @@ namespace System.Management.Automation.Runspaces
                 typeMembers,
                 isOverride: false);
 
-            newMembers.Add(@"NameString");
+            newMembers.Add(@"Name");
             AddMember(
                 errors,
                 typeName,
                 new PSCodeProperty(
-                    @"NameString",
+                    @"Name",
                     GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"NameString"),
                     setterCodeReference: null)
                 { IsHidden = true },
                 typeMembers,
                 isOverride: false);
 
-            newMembers.Add(@"LengthString");
+            newMembers.Add(@"Length");
             AddMember(
                 errors,
                 typeName,
                 new PSCodeProperty(
-                    @"LengthString",
+                    @"Length",
                     GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"LengthString"),
-                    setterCodeReference: null)
-                { IsHidden = true },
-                typeMembers,
-                isOverride: false);
-
-            newMembers.Add(@"LastWriteTimeString");
-            AddMember(
-                errors,
-                typeName,
-                new PSCodeProperty(
-                    @"LastWriteTimeString",
-                    GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"LastWriteTimeString"),
                     setterCodeReference: null)
                 { IsHidden = true },
                 typeMembers,
@@ -755,23 +743,23 @@ namespace System.Management.Automation.Runspaces
             typeMembers = _extendedMembers.GetOrAdd(typeName, static key => new PSMemberInfoInternalCollection<PSMemberInfo>(capacity: 10));
 
             // Process regular members.
+            newMembers.Add(@"ModeWithHardLink");
+            AddMember(
+                errors,
+                typeName,
+                new PSCodeProperty(
+                    @"ModeWithHardLink",
+                    GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"Mode"),
+                    setterCodeReference: null),
+                typeMembers,
+                isOverride: false);
+
             newMembers.Add(@"Mode");
             AddMember(
                 errors,
                 typeName,
                 new PSCodeProperty(
                     @"Mode",
-                    GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"Mode"),
-                    setterCodeReference: null),
-                typeMembers,
-                isOverride: false);
-
-            newMembers.Add(@"ModeWithoutHardLink");
-            AddMember(
-                errors,
-                typeName,
-                new PSCodeProperty(
-                    @"ModeWithoutHardLink",
                     GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"ModeWithoutHardLink"),
                     setterCodeReference: null),
                 typeMembers,
@@ -820,37 +808,25 @@ namespace System.Management.Automation.Runspaces
                 typeMembers,
                 isOverride: false);
 
-            newMembers.Add(@"NameString");
+            newMembers.Add(@"Name");
             AddMember(
                 errors,
                 typeName,
                 new PSCodeProperty(
-                    @"NameString",
+                    @"Name",
                     GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"NameString"),
                     setterCodeReference: null)
                 { IsHidden = true },
                 typeMembers,
                 isOverride: false);
 
-            newMembers.Add(@"LengthString");
+            newMembers.Add(@"Length");
             AddMember(
                 errors,
                 typeName,
                 new PSCodeProperty(
-                    @"LengthString",
+                    @"Length",
                     GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"LengthString"),
-                    setterCodeReference: null)
-                { IsHidden = true },
-                typeMembers,
-                isOverride: false);
-
-            newMembers.Add(@"LastWriteTimeString");
-            AddMember(
-                errors,
-                typeName,
-                new PSCodeProperty(
-                    @"LastWriteTimeString",
-                    GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"LastWriteTimeString"),
                     setterCodeReference: null)
                 { IsHidden = true },
                 typeMembers,

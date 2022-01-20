@@ -2116,18 +2116,6 @@ namespace Microsoft.PowerShell.Commands
                 : string.Empty;
         }
 
-        /// <summary>
-        /// Provides a LastWriteTimeString property for FileSystemInfo.
-        /// </summary>
-        /// <param name="instance">Instance of PSObject wrapping a FileSystemInfo.</param>
-        /// <returns>LastWriteTime formatted as short date + short time.</returns>
-        public static string LastWriteTimeString(PSObject instance)
-        {
-            return instance?.BaseObject is FileSystemInfo fileInfo
-                ? string.Format(CultureInfo.CurrentCulture, "{0,10:d} {0,8:t}", fileInfo.LastWriteTime)
-                : string.Empty;
-        }
-
         #region RenameItem
 
         /// <summary>

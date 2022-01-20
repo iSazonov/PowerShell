@@ -57,7 +57,7 @@ namespace System.Management.Automation.Runspaces
                         .AddPropertyColumn("Group")
                         .AddScriptBlockColumn(scriptBlock: @"'{0:d} {0:HH}:{0:mm}' -f $_.LastWriteTime")
                         .AddPropertyColumn("Size")
-                        .AddPropertyColumn("NameString")
+                        .AddPropertyColumn("Name")
                     .EndRowDefinition()
                 .EndTable());
 #endif
@@ -70,10 +70,10 @@ namespace System.Management.Automation.Runspaces
                     .AddHeader(Alignment.Right, label: "Length", width: 14)
                     .AddHeader(Alignment.Left, label: "Name")
                     .StartRowDefinition(wrap: true)
-                        .AddPropertyColumn("ModeWithoutHardLink")
-                        .AddPropertyColumn("LastWriteTimeString")
-                        .AddPropertyColumn("LengthString")
-                        .AddPropertyColumn("NameString")
+                        .AddPropertyColumn("Mode")
+                        .AddPropertyColumn("LastWriteTime", format: "{0:d} {0,6:t}")
+                        .AddPropertyColumn("Length")
+                        .AddPropertyColumn("Name")
                     .EndRowDefinition()
                 .EndTable());
 
@@ -85,10 +85,10 @@ namespace System.Management.Automation.Runspaces
                     .AddHeader(Alignment.Right, label: "Length", width: 14)
                     .AddHeader(Alignment.Left, label: "Name")
                     .StartRowDefinition(wrap: true)
-                        .AddPropertyColumn("Mode")
-                        .AddPropertyColumn("LastWriteTimeString")
-                        .AddPropertyColumn("LengthString")
-                        .AddPropertyColumn("NameString")
+                        .AddPropertyColumn("ModeWithHardLink")
+                        .AddPropertyColumn("LastWriteTime", format: "{0:d} {0,6:t}")
+                        .AddPropertyColumn("Length")
+                        .AddPropertyColumn("Name")
                     .EndRowDefinition()
                 .EndTable());
 
@@ -97,7 +97,7 @@ namespace System.Management.Automation.Runspaces
                     .GroupByProperty("PSParentPath", customControl: sharedControls[0])
                     .StartEntry(entrySelectedByType: new[] { "System.IO.FileInfo" })
                         .AddItemProperty(@"Name")
-                        .AddItemProperty("LengthString", label: "Length")
+                        .AddItemProperty("Length")
                         .AddItemProperty(@"CreationTime")
                         .AddItemProperty(@"LastWriteTime")
                         .AddItemProperty(@"LastAccessTime")
