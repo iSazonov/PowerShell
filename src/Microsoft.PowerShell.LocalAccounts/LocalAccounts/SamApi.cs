@@ -190,7 +190,7 @@ namespace System.Management.Automation.SecurityAccountsManager.Native.NtSam
     [StructLayout(LayoutKind.Sequential)]
     internal struct USER_ADMIN_COMMENT_INFORMATION
     {
-        UNICODE_STRING AdminComment;
+        public UNICODE_STRING AdminComment;
     }
 
     [StructLayout(LayoutKind.Sequential)]

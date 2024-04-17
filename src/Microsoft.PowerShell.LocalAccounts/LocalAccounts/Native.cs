@@ -169,7 +169,7 @@ namespace System.Management.Automation.SecurityAccountsManager.Native
     // invisibly to the C# compiler, and some fields will not be used in C# code.
 #pragma warning disable 0649, 0169
     [StructLayout(LayoutKind.Explicit, Size = 8)]
-    struct LARGE_INTEGER
+    internal struct LARGE_INTEGER
     {
         [FieldOffset(0)]
         public Int64 QuadPart;
