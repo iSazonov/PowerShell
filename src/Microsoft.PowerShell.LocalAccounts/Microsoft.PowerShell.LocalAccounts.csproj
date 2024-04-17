@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <Description>PowerShell's Microsoft.PowerShell.LocalAccounts project</Description>
-    <NoWarn>$(NoWarn);CS1591;SYSLIB0051</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB0051</NoWarn>
     <AssemblyName>Microsoft.PowerShell.LocalAccounts</AssemblyName>
   </PropertyGroup>
 
