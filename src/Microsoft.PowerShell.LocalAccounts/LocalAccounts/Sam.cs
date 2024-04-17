@@ -15,6 +15,7 @@ using Microsoft.PowerShell.Commands;
 using Microsoft.PowerShell.LocalAccounts;
 
 [module: SuppressMessage("Microsoft.Design", "CA1014:MarkAssembliesWithClsCompliant")]
+[assembly:System.Runtime.Versioning.SupportedOSPlatform("windows")]
 
 namespace System.Management.Automation.SecurityAccountsManager
 {
