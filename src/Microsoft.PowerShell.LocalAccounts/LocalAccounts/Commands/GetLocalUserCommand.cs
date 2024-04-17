@@ -3,12 +3,10 @@
 
 #region Using directives
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
-
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
+using System.Security.Principal;
 #endregion
 
 namespace Microsoft.PowerShell.Commands
@@ -39,15 +37,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNull]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public string[] Name
-        {
-            get { return this.name; }
-
-            set { this.name = value; }
-        }
-
-        private string[] name;
+        public string[] Name { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -58,15 +48,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNull]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public System.Security.Principal.SecurityIdentifier[] SID
-        {
-            get { return this.sid; }
-
-            set { this.sid = value; }
-        }
-
-        private System.Security.Principal.SecurityIdentifier[] sid;
+        public SecurityIdentifier[] SID { get; set; }
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -85,7 +67,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (Name == null && SID == null)
             {
-                foreach (var user in sam.GetAllLocalUsers())
+                foreach (LocalUser user in sam.GetAllLocalUsers())
                     WriteObject(user);
 
                 return;
@@ -121,16 +103,15 @@ namespace Microsoft.PowerShell.Commands
         {
             if (Name != null)
             {
-                foreach (var nm in Name)
+                foreach (string nm in Name)
                 {
                     try
                     {
                         if (WildcardPattern.ContainsWildcardCharacters(nm))
                         {
-                            var pattern = new WildcardPattern(nm, WildcardOptions.Compiled
-                                                                | WildcardOptions.IgnoreCase);
+                            var pattern = new WildcardPattern(nm, WildcardOptions.Compiled | WildcardOptions.IgnoreCase);
 
-                            foreach (var user in sam.GetMatchingLocalUsers(n => pattern.IsMatch(n)))
+                            foreach (LocalUser user in sam.GetMatchingLocalUsers(n => pattern.IsMatch(n)))
                                 WriteObject(user);
                         }
                         else
@@ -153,7 +134,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (SID != null)
             {
-                foreach (var s in SID)
+                foreach (SecurityIdentifier s in SID)
                 {
                     try
                     {
@@ -168,5 +149,4 @@ namespace Microsoft.PowerShell.Commands
         }
         #endregion Private Methods
     }
-
 }
