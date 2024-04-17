@@ -3,13 +3,11 @@
 
 #region Using directives
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
-
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
-
 using Microsoft.PowerShell.LocalAccounts;
-using System.Diagnostics.CodeAnalysis;
 #endregion
 
 namespace Microsoft.PowerShell.Commands

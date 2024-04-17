@@ -4,13 +4,11 @@
 #region Using directives
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
-
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
-
 using Microsoft.PowerShell.LocalAccounts;
-using System.Diagnostics.CodeAnalysis;
 #endregion
 
 namespace Microsoft.PowerShell.Commands
@@ -91,7 +89,7 @@ namespace Microsoft.PowerShell.Commands
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public System.Security.Principal.SecurityIdentifier[] SID
         {
-            get { return this.sid;}
+            get { return this.sid; }
 
             set { this.sid = value; }
         }

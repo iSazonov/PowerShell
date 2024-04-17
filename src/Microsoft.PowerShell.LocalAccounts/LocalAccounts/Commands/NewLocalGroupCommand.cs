@@ -19,7 +19,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     [Cmdlet(VerbsCommon.New, "LocalGroup",
             SupportsShouldProcess = true,
-            HelpUri ="https://go.microsoft.com/fwlink/?LinkId=717990")]
+            HelpUri = "https://go.microsoft.com/fwlink/?LinkId=717990")]
     [Alias("nlg")]
     public class NewLocalGroupCommand : Cmdlet
     {
@@ -36,7 +36,7 @@ namespace Microsoft.PowerShell.Commands
         [ValidateNotNull]
         public string Description
         {
-            get { return this.description;}
+            get { return this.description; }
 
             set { this.description = value; }
         }
@@ -55,7 +55,7 @@ namespace Microsoft.PowerShell.Commands
         [ValidateLength(1, 256)]
         public string Name
         {
-            get { return this.name;}
+            get { return this.name; }
 
             set { this.name = value; }
         }
@@ -82,10 +82,10 @@ namespace Microsoft.PowerShell.Commands
                 if (CheckShouldProcess(Name))
                 {
                     var group = sam.CreateLocalGroup(new LocalGroup
-                                                        {
-                                                            Description = Description,
-                                                            Name = Name
-                                                        });
+                    {
+                        Description = Description,
+                        Name = Name
+                    });
 
                     WriteObject(group);
                 }

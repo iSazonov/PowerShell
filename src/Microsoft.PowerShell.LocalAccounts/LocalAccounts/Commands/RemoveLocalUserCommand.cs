@@ -3,13 +3,11 @@
 
 #region Using directives
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
-
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
-
 using Microsoft.PowerShell.LocalAccounts;
-using System.Diagnostics.CodeAnalysis;
 #endregion
 
 namespace Microsoft.PowerShell.Commands
@@ -43,7 +41,7 @@ namespace Microsoft.PowerShell.Commands
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public Microsoft.PowerShell.Commands.LocalUser[] InputObject
         {
-            get { return this.inputobject;}
+            get { return this.inputobject; }
 
             set { this.inputobject = value; }
         }
