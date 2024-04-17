@@ -3,8 +3,8 @@
 
 #region Using directives
 using System;
+using System.DirectoryServices.AccountManagement;
 using System.Management.Automation;
-using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
 using System.Security.Principal;
 
@@ -22,14 +22,10 @@ namespace Microsoft.PowerShell.Commands
             SupportsShouldProcess = true,
             HelpUri = "https://go.microsoft.com/fwlink/?LinkId=717985")]
     [Alias("elu")]
-    public class EnableLocalUserCommand : Cmdlet
+    public class EnableLocalUserCommand : Cmdlet, IDisposable
     {
-        #region Constants
-        private const Enabling enabling = Enabling.Enable;
-        #endregion Constants
-
         #region Instance Data
-        private Sam sam = null;
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine);
         #endregion Instance Data
 
         #region Parameter Properties
@@ -75,14 +71,6 @@ namespace Microsoft.PowerShell.Commands
 
         #region Cmdlet Overrides
         /// <summary>
-        /// BeginProcessing method.
-        /// </summary>
-        protected override void BeginProcessing()
-        {
-            sam = new Sam();
-        }
-
-        /// <summary>
         /// ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
@@ -96,18 +84,6 @@ namespace Microsoft.PowerShell.Commands
             catch (Exception ex)
             {
                 WriteError(ex.MakeErrorRecord());
-            }
-        }
-
-        /// <summary>
-        /// EndProcessing method.
-        /// </summary>
-        protected override void EndProcessing()
-        {
-            if (sam != null)
-            {
-                sam.Dispose();
-                sam = null;
             }
         }
         #endregion Cmdlet Overrides
@@ -129,7 +105,14 @@ namespace Microsoft.PowerShell.Commands
                     try
                     {
                         if (CheckShouldProcess(name))
-                            sam.EnableLocalUser(sam.GetLocalUser(name), enabling);
+                        {
+                            UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, name);
+                            if (userPrincipal is not null)
+                            {
+                                userPrincipal.Enabled = true;
+                                userPrincipal.Save();
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -150,8 +133,16 @@ namespace Microsoft.PowerShell.Commands
                 {
                     try
                     {
-                        if (CheckShouldProcess(sid.ToString()))
-                            sam.EnableLocalUser(sid, enabling);
+                        var sidString = sid.ToString();
+                        if (CheckShouldProcess(sidString))
+                        {
+                            UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, sidString);
+                            if (userPrincipal is not null)
+                            {
+                                userPrincipal.Enabled = true;
+                                userPrincipal.Save();
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -173,7 +164,14 @@ namespace Microsoft.PowerShell.Commands
                     try
                     {
                         if (CheckShouldProcess(user.Name))
-                            sam.EnableLocalUser(user, enabling);
+                        {
+                            UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, user.Name);
+                            if (userPrincipal is not null)
+                            {
+                                userPrincipal.Enabled = true;
+                                userPrincipal.Save();
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -188,5 +186,37 @@ namespace Microsoft.PowerShell.Commands
             return ShouldProcess(target, Strings.ActionEnableUser);
         }
         #endregion Private Methods
+
+        #region IDisposable interface
+        private bool _disposed;
+
+        /// <summary>
+        /// Dispose the DisableLocalUserCommand.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Implementation of IDisposable for both manual Dispose() and finalizer-called disposal of resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// Specified as true when Dispose() was called, false if this is called from the finalizer.
+        /// </param>
+        protected void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _principalContext?.Dispose();
+                }
+
+                _disposed = true;
+            }
+        }
+        #endregion
     }
 }
