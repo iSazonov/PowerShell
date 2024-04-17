@@ -10,6 +10,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\System.Management.Automation\System.Management.Automation.csproj" />
+    <PackageReference Include="System.DirectoryServices.AccountManagement" Version="9.0.0-preview.1.24080.9" />
+
   </ItemGroup>
 
 </Project>
