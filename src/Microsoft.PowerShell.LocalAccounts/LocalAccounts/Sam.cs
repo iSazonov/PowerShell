@@ -2818,7 +2818,7 @@ namespace System.Management.Automation.SecurityAccountsManager
         /// A new LocalPrincipal object representing the account, or null if the
         /// <paramref name="info"/> parameter is null.
         /// </returns>
-        private LocalPrincipal MakeLocalPrincipalObject(AccountInfo info)
+        private static LocalPrincipal MakeLocalPrincipalObject(AccountInfo info)
         {
             if (info == null)
                 return null;    // this is a legitimate case
@@ -3024,7 +3024,7 @@ namespace System.Management.Automation.SecurityAccountsManager
         /// One of the <see cref="PrincipalSource"/> enumerations identifying the
         /// source of the object.
         /// </returns>
-        private PrincipalSource? GetPrincipalSource(SecurityIdentifier sid)
+        private static PrincipalSource? GetPrincipalSource(SecurityIdentifier sid)
         {
             var bSid = new byte[sid.BinaryLength];
 
@@ -3090,7 +3090,7 @@ namespace System.Management.Automation.SecurityAccountsManager
         /// One of the <see cref="PrincipalSource"/> enumerations identifying the
         /// source of the object.
         /// </returns>
-        private PrincipalSource? GetPrincipalSource(AccountInfo info)
+        private static PrincipalSource? GetPrincipalSource(AccountInfo info)
         {
             return GetPrincipalSource(info.Sid);
         }
@@ -3190,7 +3190,7 @@ namespace System.Management.Automation.SecurityAccountsManager
 #endif
 
         // Wraps calls to acquire the OperatingSystem version
-        private OperatingSystem GetOperatingSystem()
+        private static OperatingSystem GetOperatingSystem()
         {
 #if CORECLR
             if (localOs == null)
