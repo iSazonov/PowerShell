@@ -1,6 +1,5 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
-# https://github.com/dotnet/project-system/blob/master/docs/opening-with-new-project-system.md#project-type-guids
 VisualStudioVersion = 15.0.26730.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "powershell-win-core", "src\powershell-win-core\powershell-win-core.csproj", "{8359D422-E0C4-4A0D-94EB-3C9DD16B7932}"
@@ -31,15 +30,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "powershell-unix", "src\powe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "xUnit.tests", "test\xUnit\xUnit.tests.csproj", "{08704934-9764-48CE-86DB-BCF0A1CF7899}"
 EndProject
-# Configuration mapping comment
-# All global configurations must be mapped to project configurations
-#
-# 4BC19063-1F66-467B-87DE-80449C72BCD6 - Microsoft.PowerShell.SDK
-# 8359D422-E0C4-4A0D-94EB-3C9DD16B7932 - PowerShell-Win
-# Linux is invalid and mapped to Release
-#
-# 73EA0BE6-C0C5-4B56-A5AA-DADA4C01D690 - powershell-unix
-# Only Linux is valid, all configurations mapped to Linux
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.PowerShell.LocalAccounts", "src\Microsoft.PowerShell.LocalAccounts\Microsoft.PowerShell.LocalAccounts.csproj", "{E0F09CB6-F946-4164-A679-2D8D6FB39E8A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		CodeCoverage|Any CPU = CodeCoverage|Any CPU
@@ -168,11 +160,22 @@ Global
 		{08704934-9764-48CE-86DB-BCF0A1CF7899}.Linux|Any CPU.Build.0 = Linux|Any CPU
 		{08704934-9764-48CE-86DB-BCF0A1CF7899}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08704934-9764-48CE-86DB-BCF0A1CF7899}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0F09CB6-F946-4164-A679-2D8D6FB39E8A}.CodeCoverage|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0F09CB6-F946-4164-A679-2D8D6FB39E8A}.CodeCoverage|Any CPU.Build.0 = Debug|Any CPU
+		{E0F09CB6-F946-4164-A679-2D8D6FB39E8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0F09CB6-F946-4164-A679-2D8D6FB39E8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0F09CB6-F946-4164-A679-2D8D6FB39E8A}.Linux|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0F09CB6-F946-4164-A679-2D8D6FB39E8A}.Linux|Any CPU.Build.0 = Debug|Any CPU
+		{E0F09CB6-F946-4164-A679-2D8D6FB39E8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0F09CB6-F946-4164-A679-2D8D6FB39E8A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9128A855-8499-43C0-9C7C-08ECC47768B0}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E0F09CB6-F946-4164-A679-2D8D6FB39E8A} = {088554FE-0C0C-427A-9D3B-38DF4B399D65}
 	EndGlobalSection
 EndGlobal
