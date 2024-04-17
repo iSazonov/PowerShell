@@ -2905,8 +2905,7 @@ namespace System.Management.Automation.SecurityAccountsManager
             if (!NtStatus.IsError(ntStatus))
                 return null;
 
-            if (context == null)
-                context = this.context;
+            context ??= this.context;
 
             switch (ntStatus)
             {
