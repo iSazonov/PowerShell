@@ -3,11 +3,11 @@
 
 #region Using directives
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
+using System.Security.Principal;
+
 using Microsoft.PowerShell.LocalAccounts;
 #endregion
 
@@ -44,15 +44,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "InputObject")]
         [ValidateNotNullOrEmpty]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public Microsoft.PowerShell.Commands.LocalUser[] InputObject
-        {
-            get { return this.inputobject; }
-
-            set { this.inputobject = value; }
-        }
-
-        private Microsoft.PowerShell.Commands.LocalUser[] inputobject;
+        public LocalUser[] InputObject { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -65,15 +57,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public string[] Name
-        {
-            get { return this.name; }
-
-            set { this.name = value; }
-        }
-
-        private string[] name;
+        public string[] Name { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -86,15 +70,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNullOrEmpty]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public System.Security.Principal.SecurityIdentifier[] SID
-        {
-            get { return this.sid; }
-
-            set { this.sid = value; }
-        }
-
-        private System.Security.Principal.SecurityIdentifier[] sid;
+        public SecurityIdentifier[] SID { get; set; }
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -148,7 +124,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (Name != null)
             {
-                foreach (var name in Name)
+                foreach (string name in Name)
                 {
                     try
                     {
@@ -170,7 +146,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (SID != null)
             {
-                foreach (var sid in SID)
+                foreach (SecurityIdentifier sid in SID)
                 {
                     try
                     {
@@ -192,7 +168,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (InputObject != null)
             {
-                foreach (var user in InputObject)
+                foreach (LocalUser user in InputObject)
                 {
                     try
                     {
@@ -213,5 +189,4 @@ namespace Microsoft.PowerShell.Commands
         }
         #endregion Private Methods
     }
-
 }
