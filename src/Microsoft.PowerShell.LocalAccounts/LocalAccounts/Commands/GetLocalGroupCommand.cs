@@ -3,7 +3,6 @@
 
 #region Using directives
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
@@ -36,15 +35,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNull]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public string[] Name
-        {
-            get { return this.name; }
-
-            set { this.name = value; }
-        }
-
-        private string[] name;
+        public string[] Name { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -55,26 +46,10 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNull]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public System.Security.Principal.SecurityIdentifier[] SID
-        {
-            get { return this.sid; }
-
-            set { this.sid = value; }
-        }
-
-        private System.Security.Principal.SecurityIdentifier[] sid;
+        public SecurityIdentifier[] SID { get; set; }
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
-        /// <summary>
-        /// BeginProcessing method.
-        /// </summary>
-        protected override void BeginProcessing()
-        {
-            sam = new Sam();
-        }
-
         /// <summary>
         /// ProcessRecord method.
         /// </summary>
@@ -82,7 +57,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (Name == null && SID == null)
             {
-                foreach (var group in sam.GetAllLocalGroups())
+                foreach (LocalGroup group in sam.GetAllLocalGroups())
                     WriteObject(group);
 
                 return;
@@ -90,18 +65,6 @@ namespace Microsoft.PowerShell.Commands
 
             ProcessNames();
             ProcessSids();
-        }
-
-        /// <summary>
-        /// EndProcessing method.
-        /// </summary>
-        protected override void EndProcessing()
-        {
-            if (sam != null)
-            {
-                sam.Dispose();
-                sam = null;
-            }
         }
         #endregion Cmdlet Overrides
 
@@ -118,16 +81,15 @@ namespace Microsoft.PowerShell.Commands
         {
             if (Name != null)
             {
-                foreach (var name in Name)
+                foreach (string name in Name)
                 {
                     try
                     {
                         if (WildcardPattern.ContainsWildcardCharacters(name))
                         {
-                            var pattern = new WildcardPattern(name, WildcardOptions.Compiled
-                                                                | WildcardOptions.IgnoreCase);
+                            var pattern = new WildcardPattern(name, WildcardOptions.Compiled | WildcardOptions.IgnoreCase);
 
-                            foreach (var group in sam.GetMatchingLocalGroups(n => pattern.IsMatch(n)))
+                            foreach (LocalGroup group in sam.GetMatchingLocalGroups(n => pattern.IsMatch(n)))
                                 WriteObject(group);
                         }
                         else
@@ -150,7 +112,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (SID != null)
             {
-                foreach (var sid in SID)
+                foreach (SecurityIdentifier sid in SID)
                 {
                     try
                     {
@@ -165,5 +127,4 @@ namespace Microsoft.PowerShell.Commands
         }
         #endregion Private Methods
     }
-
 }
