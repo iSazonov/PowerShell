@@ -36,14 +36,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Group")]
         [ValidateNotNull]
-        public Microsoft.PowerShell.Commands.LocalGroup Group
-        {
-            get { return this.group; }
-
-            set { this.group = value; }
-        }
-
-        private Microsoft.PowerShell.Commands.LocalGroup group;
+        public LocalGroup Group { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Member".
@@ -53,14 +46,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty]
-        public string Member
-        {
-            get { return this.member; }
-
-            set { this.member = value; }
-        }
-
-        private string member;
+        public string Member { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -72,14 +58,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        public string Name
-        {
-            get { return this.name; }
-
-            set { this.name = value; }
-        }
-
-        private string name;
+        public string Name { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -91,14 +70,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNullOrEmpty]
-        public System.Security.Principal.SecurityIdentifier SID
-        {
-            get { return this.sid; }
-
-            set { this.sid = value; }
-        }
-
-        private System.Security.Principal.SecurityIdentifier sid;
+        public SecurityIdentifier SID { get; set; }
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -120,14 +92,22 @@ namespace Microsoft.PowerShell.Commands
                 IEnumerable<LocalPrincipal> principals = null;
 
                 if (Group != null)
+                {
                     principals = ProcessGroup(Group);
+                }
                 else if (Name != null)
+                {
                     principals = ProcessName(Name);
+                }
                 else if (SID != null)
+                {
                     principals = ProcessSid(SID);
+                }
 
                 if (principals != null)
-                    WriteObject(principals, true);
+                {
+                    WriteObject(principals, enumerateCollection: true);
+                }
             }
             catch (Exception ex)
             {
@@ -169,17 +149,17 @@ namespace Microsoft.PowerShell.Commands
                     var pattern = new WildcardPattern(Member, WildcardOptions.Compiled
                                                                 | WildcardOptions.IgnoreCase);
 
-                    foreach (var m in membership)
+                    foreach (LocalPrincipal m in membership)
                         if (pattern.IsMatch(sam.StripMachineName(m.Name)))
                             rv.Add(m);
                 }
                 else
                 {
-                    var sid = this.TrySid(Member);
+                    SecurityIdentifier sid = this.TrySid(Member);
 
                     if (sid != null)
                     {
-                        foreach (var m in membership)
+                        foreach (LocalPrincipal m in membership)
                         {
                             if (m.SID == sid)
                             {
@@ -190,7 +170,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                     else
                     {
-                        foreach (var m in membership)
+                        foreach (LocalPrincipal m in membership)
                         {
                             if (sam.StripMachineName(m.Name).Equals(Member, StringComparison.CurrentCultureIgnoreCase))
                             {
@@ -202,7 +182,7 @@ namespace Microsoft.PowerShell.Commands
 
                     if (rv.Count == 0)
                     {
-                        var ex = new PrincipalNotFoundException(member, member);
+                        var ex = new PrincipalNotFoundException(Member, Member);
                         WriteError(ex.MakeErrorRecord());
                     }
                 }
@@ -230,5 +210,4 @@ namespace Microsoft.PowerShell.Commands
         }
         #endregion Private Methods
     }
-
 }
