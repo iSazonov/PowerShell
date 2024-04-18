@@ -79,4 +79,43 @@ internal static class LocalHelpers
             }
         }
     }
+
+    /// <summary>
+    /// Get all local groups whose properties satisfy the specified predicate.
+    /// </summary>
+    /// <param name="principalFilter">
+    /// Predicate that determines whether a group satisfies the conditions.
+    /// </param>
+    /// <param name="principalContext">
+    /// Encapsulates the server or domain against which all operations are performed.
+    /// </param>
+    /// <returns>
+    /// An <see cref="IEnumerable{LocalGroup}"/> object containing LocalGroup
+    /// objects that satisfy the predicate condition.
+    /// </returns>
+    internal static IEnumerable<LocalGroup> GetMatchingLocalGroups(Predicate<GroupPrincipal> principalFilter, PrincipalContext principalContext)
+    {
+        using var queryFolter = new GroupPrincipal(principalContext);
+        using var searcher = new PrincipalSearcher(queryFolter);
+        foreach (GroupPrincipal group in searcher.FindAll().Cast<GroupPrincipal>())
+        {
+            using (group)
+            {
+                if (!principalFilter(group))
+                {
+                    continue;
+                }
+
+                var localGroup = new LocalGroup()
+                {
+                    Description = group.Description,
+                    Name = group.Name,
+                    PrincipalSource = Sam.GetPrincipalSource(group.Sid),
+                    SID = group.Sid,
+                };
+
+                yield return localGroup;
+            }
+        }
+    }
 }

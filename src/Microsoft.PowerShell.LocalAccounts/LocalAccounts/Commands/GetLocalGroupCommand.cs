@@ -3,6 +3,7 @@
 
 #region Using directives
 using System;
+using System.DirectoryServices.AccountManagement;
 using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
@@ -19,10 +20,10 @@ namespace Microsoft.PowerShell.Commands
             DefaultParameterSetName = "Default",
             HelpUri = "https://go.microsoft.com/fwlink/?LinkId=717974")]
     [Alias("glg")]
-    public class GetLocalGroupCommand : Cmdlet
+    public class GetLocalGroupCommand : Cmdlet, IDisposable
     {
         #region Instance Data
-        private Sam sam = null;
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine);
         #endregion Instance Data
 
         #region Parameter Properties
@@ -57,8 +58,10 @@ namespace Microsoft.PowerShell.Commands
         {
             if (Name == null && SID == null)
             {
-                foreach (LocalGroup group in sam.GetAllLocalGroups())
-                    WriteObject(group);
+                foreach (LocalGroup LocalGroup in LocalHelpers.GetMatchingLocalGroups(static _ => true, _principalContext))
+                {
+                    WriteObject(LocalGroup);
+                }
 
                 return;
             }
@@ -89,12 +92,18 @@ namespace Microsoft.PowerShell.Commands
                         {
                             var pattern = new WildcardPattern(name, WildcardOptions.Compiled | WildcardOptions.IgnoreCase);
 
-                            foreach (LocalGroup group in sam.GetMatchingLocalGroups(n => pattern.IsMatch(n)))
-                                WriteObject(group);
+                            foreach (LocalGroup localGroup in LocalHelpers.GetMatchingLocalGroups(userPrincipal => pattern.IsMatch(userPrincipal.Name), _principalContext))
+                            {
+                                WriteObject(localGroup);
+                            }
                         }
                         else
                         {
-                            WriteObject(sam.GetLocalGroup(name));
+                            foreach (LocalGroup localGroup in LocalHelpers.GetMatchingLocalGroups(userPrincipal => name.Equals(userPrincipal.Name, StringComparison.CurrentCultureIgnoreCase), _principalContext))
+                            {
+                                WriteObject(localGroup);
+                                break;
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -116,7 +125,11 @@ namespace Microsoft.PowerShell.Commands
                 {
                     try
                     {
-                        WriteObject(sam.GetLocalGroup(sid));
+                        foreach (LocalGroup localGroup in LocalHelpers.GetMatchingLocalGroups(userPrincipal => sid.Equals(userPrincipal.Sid), _principalContext))
+                        {
+                            WriteObject(localGroup);
+                            break;
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -126,5 +139,37 @@ namespace Microsoft.PowerShell.Commands
             }
         }
         #endregion Private Methods
+
+        #region IDisposable interface
+        private bool _disposed;
+
+        /// <summary>
+        /// Dispose the DisableLocalUserCommand.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Implementation of IDisposable for both manual Dispose() and finalizer-called disposal of resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// Specified as true when Dispose() was called, false if this is called from the finalizer.
+        /// </param>
+        protected void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _principalContext?.Dispose();
+                }
+
+                _disposed = true;
+            }
+        }
+        #endregion
     }
 }
