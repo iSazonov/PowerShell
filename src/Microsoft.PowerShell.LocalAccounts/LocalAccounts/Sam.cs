@@ -3024,20 +3024,19 @@ namespace System.Management.Automation.SecurityAccountsManager
         /// One of the <see cref="PrincipalSource"/> enumerations identifying the
         /// source of the object.
         /// </returns>
-        private static PrincipalSource? GetPrincipalSource(SecurityIdentifier sid)
+        internal static PrincipalSource? GetPrincipalSource(SecurityIdentifier sid)
         {
             var bSid = new byte[sid.BinaryLength];
 
             sid.GetBinaryForm(bSid, 0);
 
-            var type = LSA_USER_ACCOUNT_TYPE.UnknownUserAccountType;
+            LSA_USER_ACCOUNT_TYPE type = LSA_USER_ACCOUNT_TYPE.UnknownUserAccountType;
 
             // Use LsaLookupUserAccountType for Windows 10 and later.
             // Earlier versions of the OS will leave the property NULL because
             // it is too error prone to attempt to replicate the decisions of
             // LsaLookupUserAccountType.
-            var os = GetOperatingSystem();
-            if (os.Version.Major >= 10)
+            if (Environment.OSVersion.Version.Major >= 10)
             {
                 UInt32 status = Native.Win32.LsaLookupUserAccountType(bSid, out type);
                 if (NtStatus.IsError(status))

@@ -3,6 +3,7 @@
 
 #region Using directives
 using System;
+using System.DirectoryServices.AccountManagement;
 using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
@@ -20,10 +21,10 @@ namespace Microsoft.PowerShell.Commands
             DefaultParameterSetName = "Default",
             HelpUri = "https://go.microsoft.com/fwlink/?LinkId=717980")]
     [Alias("glu")]
-    public class GetLocalUserCommand : Cmdlet
+    public class GetLocalUserCommand : Cmdlet, IDisposable
     {
         #region Instance Data
-        private Sam sam = null;
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine);
         #endregion Instance Data
 
         #region Parameter Properties
@@ -53,40 +54,22 @@ namespace Microsoft.PowerShell.Commands
 
         #region Cmdlet Overrides
         /// <summary>
-        /// BeginProcessing method.
-        /// </summary>
-        protected override void BeginProcessing()
-        {
-            sam = new Sam();
-        }
-
-        /// <summary>
         /// ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
         {
             if (Name == null && SID == null)
             {
-                foreach (LocalUser user in sam.GetAllLocalUsers())
-                    WriteObject(user);
+                foreach (LocalUser localUser in LocalHelpers.GetMatchingLocalUsers(static _ => true, _principalContext))
+                {
+                    WriteObject(localUser);
+                }
 
                 return;
             }
 
             ProcessNames();
             ProcessSids();
-        }
-
-        /// <summary>
-        /// EndProcessing method.
-        /// </summary>
-        protected override void EndProcessing()
-        {
-            if (sam != null)
-            {
-                sam.Dispose();
-                sam = null;
-            }
         }
         #endregion Cmdlet Overrides
 
@@ -110,13 +93,18 @@ namespace Microsoft.PowerShell.Commands
                         if (WildcardPattern.ContainsWildcardCharacters(nm))
                         {
                             var pattern = new WildcardPattern(nm, WildcardOptions.Compiled | WildcardOptions.IgnoreCase);
-
-                            foreach (LocalUser user in sam.GetMatchingLocalUsers(n => pattern.IsMatch(n)))
-                                WriteObject(user);
+                            foreach (LocalUser localUser in LocalHelpers.GetMatchingLocalUsers(userPrincipal => pattern.IsMatch(userPrincipal.Name), _principalContext))
+                            {
+                                WriteObject(localUser);
+                            }
                         }
                         else
                         {
-                            WriteObject(sam.GetLocalUser(nm));
+                            foreach (LocalUser localUser in LocalHelpers.GetMatchingLocalUsers(userPrincipal => nm.Equals(userPrincipal.Name, StringComparison.CurrentCultureIgnoreCase), _principalContext))
+                            {
+                                WriteObject(localUser);
+                                break;
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -138,7 +126,11 @@ namespace Microsoft.PowerShell.Commands
                 {
                     try
                     {
-                        WriteObject(sam.GetLocalUser(s));
+                        foreach (LocalUser localUser in LocalHelpers.GetMatchingLocalUsers(userPrincipal => s.Equals(userPrincipal.Sid), _principalContext))
+                        {
+                            WriteObject(localUser);
+                            break;
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -148,5 +140,37 @@ namespace Microsoft.PowerShell.Commands
             }
         }
         #endregion Private Methods
+
+        #region IDisposable interface
+        private bool _disposed;
+
+        /// <summary>
+        /// Dispose the DisableLocalUserCommand.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Implementation of IDisposable for both manual Dispose() and finalizer-called disposal of resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// Specified as true when Dispose() was called, false if this is called from the finalizer.
+        /// </param>
+        protected void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _principalContext?.Dispose();
+                }
+
+                _disposed = true;
+            }
+        }
+        #endregion
     }
 }
