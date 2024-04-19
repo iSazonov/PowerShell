@@ -3,12 +3,11 @@
 
 #region Using directives
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
 using System.Security.Principal;
+
 using Microsoft.PowerShell.LocalAccounts;
 #endregion
 
@@ -37,14 +36,7 @@ namespace Microsoft.PowerShell.Commands
                    Position = 0,
                    ParameterSetName = "Group")]
         [ValidateNotNull]
-        public Microsoft.PowerShell.Commands.LocalGroup Group
-        {
-            get { return this.group; }
-
-            set { this.group = value; }
-        }
-
-        private Microsoft.PowerShell.Commands.LocalGroup group;
+        public LocalGroup Group { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Member".
@@ -57,15 +49,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipeline = true,
                    ValueFromPipelineByPropertyName = true)]
         [ValidateNotNullOrEmpty]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public Microsoft.PowerShell.Commands.LocalPrincipal[] Member
-        {
-            get { return this.member; }
-
-            set { this.member = value; }
-        }
-
-        private Microsoft.PowerShell.Commands.LocalPrincipal[] member;
+        public LocalPrincipal[] Member { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -75,14 +59,7 @@ namespace Microsoft.PowerShell.Commands
                    Position = 0,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        public string Name
-        {
-            get { return this.name; }
-
-            set { this.name = value; }
-        }
-
-        private string name;
+        public string Name { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -92,14 +69,7 @@ namespace Microsoft.PowerShell.Commands
                    Position = 0,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNull]
-        public System.Security.Principal.SecurityIdentifier SID
-        {
-            get { return this.sid; }
-
-            set { this.sid = value; }
-        }
-
-        private System.Security.Principal.SecurityIdentifier sid;
+        public SecurityIdentifier SID { get; set; }
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -247,12 +217,12 @@ namespace Microsoft.PowerShell.Commands
         private void ProcessGroup(LocalGroup group)
         {
             string groupId = group.Name ?? group.SID.ToString();
-            foreach (var member in this.Member)
+            foreach (LocalPrincipal member in Member)
             {
                 LocalPrincipal principal = MakePrincipal(groupId, member);
                 if (principal != null)
                 {
-                    var ex = sam.AddLocalGroupMember(group, principal);
+                    Exception ex = sam.AddLocalGroupMember(group, principal);
                     if (ex != null)
                     {
                         WriteError(ex.MakeErrorRecord());
@@ -281,7 +251,7 @@ namespace Microsoft.PowerShell.Commands
         /// </param>
         private void ProcessSid(SecurityIdentifier groupSid)
         {
-            foreach (var member in this.Member)
+            foreach (LocalPrincipal member in this.Member)
             {
                 LocalPrincipal principal = MakePrincipal(groupSid.ToString(), member);
                 if (principal != null)
@@ -297,5 +267,4 @@ namespace Microsoft.PowerShell.Commands
 
         #endregion Private Methods
     }
-
 }
