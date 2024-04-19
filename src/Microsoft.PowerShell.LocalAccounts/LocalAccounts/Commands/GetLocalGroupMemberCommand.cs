@@ -4,6 +4,8 @@
 #region Using directives
 using System;
 using System.Collections.Generic;
+using System.DirectoryServices.AccountManagement;
+using System.Linq;
 using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
@@ -19,10 +21,10 @@ namespace Microsoft.PowerShell.Commands
             DefaultParameterSetName = "Default",
             HelpUri = "https://go.microsoft.com/fwlink/?LinkId=717988")]
     [Alias("glgm")]
-    public class GetLocalGroupMemberCommand : Cmdlet
+    public class GetLocalGroupMemberCommand : Cmdlet, IDisposable
     {
         #region Instance Data
-        private Sam sam = null;
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine);
         #endregion Instance Data
 
         #region Parameter Properties
@@ -75,14 +77,6 @@ namespace Microsoft.PowerShell.Commands
 
         #region Cmdlet Overrides
         /// <summary>
-        /// BeginProcessing method.
-        /// </summary>
-        protected override void BeginProcessing()
-        {
-            sam = new Sam();
-        }
-
-        /// <summary>
         /// ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
@@ -114,18 +108,6 @@ namespace Microsoft.PowerShell.Commands
                 WriteError(ex.MakeErrorRecord());
             }
         }
-
-        /// <summary>
-        /// EndProcessing method.
-        /// </summary>
-        protected override void EndProcessing()
-        {
-            if (sam != null)
-            {
-                sam.Dispose();
-                sam = null;
-            }
-        }
         #endregion Cmdlet Overrides
 
         #region Private Methods
@@ -133,31 +115,32 @@ namespace Microsoft.PowerShell.Commands
         {
             List<LocalPrincipal> rv;
 
-            // if no members are specified, return all of them
-            if (Member == null)
+            // if no member filters are specified, return all
+            if (Member is null)
             {
-                // return membership;
                 rv = new List<LocalPrincipal>(membership);
             }
             else
             {
-                // var rv = new List<LocalPrincipal>();
                 rv = new List<LocalPrincipal>();
 
                 if (WildcardPattern.ContainsWildcardCharacters(Member))
                 {
-                    var pattern = new WildcardPattern(Member, WildcardOptions.Compiled
-                                                                | WildcardOptions.IgnoreCase);
+                    var pattern = new WildcardPattern(Member, WildcardOptions.Compiled | WildcardOptions.IgnoreCase);
 
                     foreach (LocalPrincipal m in membership)
-                        if (pattern.IsMatch(sam.StripMachineName(m.Name)))
+                    {
+                        if (pattern.IsMatch(m.Name))
+                        {
                             rv.Add(m);
+                        }
+                    }
                 }
                 else
                 {
                     SecurityIdentifier sid = this.TrySid(Member);
 
-                    if (sid != null)
+                    if (sid is not null)
                     {
                         foreach (LocalPrincipal m in membership)
                         {
@@ -172,7 +155,7 @@ namespace Microsoft.PowerShell.Commands
                     {
                         foreach (LocalPrincipal m in membership)
                         {
-                            if (sam.StripMachineName(m.Name).Equals(Member, StringComparison.CurrentCultureIgnoreCase))
+                            if (m.Name.Equals(Member, StringComparison.CurrentCultureIgnoreCase))
                             {
                                 rv.Add(m);
                                 break;
@@ -188,7 +171,7 @@ namespace Microsoft.PowerShell.Commands
                 }
             }
 
-            // sort the resulting principals by mane
+            // sort the resulting principals by name
             rv.Sort(static (p1, p2) => string.Compare(p1.Name, p2.Name, StringComparison.CurrentCultureIgnoreCase));
 
             return rv;
@@ -196,18 +179,50 @@ namespace Microsoft.PowerShell.Commands
 
         private IEnumerable<LocalPrincipal> ProcessGroup(LocalGroup group)
         {
-            return ProcessesMembership(sam.GetLocalGroupMembers(group));
+            return ProcessesMembership(LocalHelpers.GetMatchingLocalGroupMemebersBySID(group.SID, _principalContext));
         }
 
         private IEnumerable<LocalPrincipal> ProcessName(string name)
         {
-            return ProcessGroup(sam.GetLocalGroup(name));
+            return ProcessesMembership(LocalHelpers.GetMatchingLocalGroupMembersByName(name, _principalContext));
         }
 
         private IEnumerable<LocalPrincipal> ProcessSid(SecurityIdentifier groupSid)
         {
-            return ProcessesMembership(sam.GetLocalGroupMembers(groupSid));
+            return ProcessesMembership(LocalHelpers.GetMatchingLocalGroupMemebersBySID(groupSid, _principalContext));
         }
         #endregion Private Methods
+
+        #region IDisposable interface
+        private bool _disposed;
+
+        /// <summary>
+        /// Dispose the DisableLocalUserCommand.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Implementation of IDisposable for both manual Dispose() and finalizer-called disposal of resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// Specified as true when Dispose() was called, false if this is called from the finalizer.
+        /// </param>
+        protected void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _principalContext?.Dispose();
+                }
+
+                _disposed = true;
+            }
+        }
+        #endregion
     }
 }

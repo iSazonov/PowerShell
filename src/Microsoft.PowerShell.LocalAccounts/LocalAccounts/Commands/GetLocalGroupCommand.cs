@@ -58,7 +58,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (Name == null && SID == null)
             {
-                foreach (LocalGroup LocalGroup in LocalHelpers.GetMatchingLocalGroups(static _ => true, _principalContext))
+                foreach (LocalGroup LocalGroup in LocalHelpers.GetAllLocalGroups(_principalContext))
                 {
                     WriteObject(LocalGroup);
                 }
@@ -99,11 +99,7 @@ namespace Microsoft.PowerShell.Commands
                         }
                         else
                         {
-                            foreach (LocalGroup localGroup in LocalHelpers.GetMatchingLocalGroups(userPrincipal => name.Equals(userPrincipal.Name, StringComparison.CurrentCultureIgnoreCase), _principalContext))
-                            {
-                                WriteObject(localGroup);
-                                break;
-                            }
+                            WriteObject(LocalHelpers.GetMatchingLocalGroupsByName(name, _principalContext));
                         }
                     }
                     catch (Exception ex)
@@ -125,11 +121,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     try
                     {
-                        foreach (LocalGroup localGroup in LocalHelpers.GetMatchingLocalGroups(userPrincipal => sid.Equals(userPrincipal.Sid), _principalContext))
-                        {
-                            WriteObject(localGroup);
-                            break;
-                        }
+                        WriteObject(LocalHelpers.GetMatchingLocalGroupsBySID(sid, _principalContext));
                     }
                     catch (Exception ex)
                     {
