@@ -24,7 +24,7 @@ namespace Microsoft.PowerShell.Commands
     public class GetLocalGroupMemberCommand : Cmdlet, IDisposable
     {
         #region Instance Data
-        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine);
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties

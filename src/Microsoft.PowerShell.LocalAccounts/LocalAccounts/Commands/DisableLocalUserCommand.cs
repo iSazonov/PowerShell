@@ -5,6 +5,7 @@
 using System;
 using System.DirectoryServices.AccountManagement;
 using System.Management.Automation;
+using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
 using System.Security.Principal;
 
@@ -25,7 +26,7 @@ namespace Microsoft.PowerShell.Commands
     public class DisableLocalUserCommand : Cmdlet, IDisposable
     {
         #region Instance Data
-        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine);
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties

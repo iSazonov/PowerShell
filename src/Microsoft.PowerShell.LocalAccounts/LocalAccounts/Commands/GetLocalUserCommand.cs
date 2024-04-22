@@ -24,7 +24,7 @@ namespace Microsoft.PowerShell.Commands
     public class GetLocalUserCommand : Cmdlet, IDisposable
     {
         #region Instance Data
-        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine);
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties
@@ -60,7 +60,7 @@ namespace Microsoft.PowerShell.Commands
         {
             if (Name == null && SID == null)
             {
-                foreach (LocalUser localUser in LocalHelpers.GetMatchingLocalUsers(static _ => true, _principalContext))
+                foreach (LocalUser localUser in LocalHelpers.GetAllLocalUsers(_principalContext))
                 {
                     WriteObject(localUser);
                 }
@@ -86,13 +86,13 @@ namespace Microsoft.PowerShell.Commands
         {
             if (Name != null)
             {
-                foreach (string nm in Name)
+                foreach (string name in Name)
                 {
                     try
                     {
-                        if (WildcardPattern.ContainsWildcardCharacters(nm))
+                        if (WildcardPattern.ContainsWildcardCharacters(name))
                         {
-                            var pattern = new WildcardPattern(nm, WildcardOptions.Compiled | WildcardOptions.IgnoreCase);
+                            var pattern = new WildcardPattern(name, WildcardOptions.Compiled | WildcardOptions.IgnoreCase);
                             foreach (LocalUser localUser in LocalHelpers.GetMatchingLocalUsers(userPrincipal => pattern.IsMatch(userPrincipal.Name), _principalContext))
                             {
                                 WriteObject(localUser);
@@ -100,11 +100,7 @@ namespace Microsoft.PowerShell.Commands
                         }
                         else
                         {
-                            foreach (LocalUser localUser in LocalHelpers.GetMatchingLocalUsers(userPrincipal => nm.Equals(userPrincipal.Name, StringComparison.CurrentCultureIgnoreCase), _principalContext))
-                            {
-                                WriteObject(localUser);
-                                break;
-                            }
+                            WriteObject(LocalHelpers.GetMatchingLocalUsersByName(name, _principalContext));
                         }
                     }
                     catch (Exception ex)
@@ -126,11 +122,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     try
                     {
-                        foreach (LocalUser localUser in LocalHelpers.GetMatchingLocalUsers(userPrincipal => s.Equals(userPrincipal.Sid), _principalContext))
-                        {
-                            WriteObject(localUser);
-                            break;
-                        }
+                        WriteObject(LocalHelpers.GetMatchingLocalUsersBySID(s, _principalContext));
                     }
                     catch (Exception ex)
                     {

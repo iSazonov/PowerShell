@@ -18,6 +18,60 @@ namespace System.Management.Automation.SecurityAccountsManager;
 internal static class LocalHelpers
 {
     /// <summary>
+    /// Get FQDN computer name.
+    /// </summary>
+    internal static string GetFullComputerName()
+        => Net.Dns.GetHostEntry(Environment.MachineName).HostName;
+
+    /// <summary>
+    /// Get a domain name if the local computer.
+    /// </summary>
+    internal static string GetComputerDomainName()
+        => System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().DomainName;
+
+    /// <summary>
+    /// Get all local users.
+    /// </summary>
+    /// <param name="principalContext">
+    /// Encapsulates the server or domain against which all operations are performed.
+    /// </param>
+    /// <returns>
+    /// An <see cref="IEnumerable{LocalUser}"/> object containing LocalUser objects.
+    /// </returns>
+    internal static IEnumerable<LocalUser> GetAllLocalUsers(PrincipalContext principalContext)
+        => GetMatchingLocalUsers(static _ => true, principalContext);
+
+    /// <summary>
+    /// Get local user whose a name satisfy the specified name.
+    /// </summary>
+    /// <param name="name">
+    /// A user name.
+    /// </param>
+    /// <param name="principalContext">
+    /// Encapsulates the server or domain against which all operations are performed.
+    /// </param>
+    /// <returns>
+    /// An <see cref="LocalUser"/> object for a user with the specified name.
+    /// </returns>
+    internal static LocalUser GetMatchingLocalUsersByName(string name, PrincipalContext principalContext)
+        => GetMatchingLocalUsers(userPrincipal => name.Equals(userPrincipal.Name, StringComparison.CurrentCultureIgnoreCase), principalContext).FirstOrDefault();
+
+    /// <summary>
+    /// Get local user whose a security identifier (SID) satisfy the specified SID.
+    /// </summary>
+    /// <param name="sid">
+    /// A user a security identifier (SID).
+    /// </param>
+    /// <param name="principalContext">
+    /// Encapsulates the server or domain against which all operations are performed.
+    /// </param>
+    /// <returns>
+    /// An <see cref="LocalUser"/> object for a user with the specified security identifier (SID).
+    /// </returns>
+    internal static LocalUser GetMatchingLocalUsersBySID(SecurityIdentifier sid, PrincipalContext principalContext)
+        => GetMatchingLocalUsers(userPrincipal => sid.Equals(userPrincipal.Sid), principalContext).FirstOrDefault();
+
+    /// <summary>
     /// Get all local users whose properties satisfy the specified predicate.
     /// </summary>
     /// <param name="principalFilter">
@@ -32,8 +86,8 @@ internal static class LocalHelpers
     /// </returns>
     internal static IEnumerable<LocalUser> GetMatchingLocalUsers(Predicate<UserPrincipal> principalFilter, PrincipalContext principalContext)
     {
-        using var queryFolter = new UserPrincipal(principalContext);
-        using var searcher = new PrincipalSearcher(queryFolter);
+        using var queryFilter = new UserPrincipal(principalContext);
+        using var searcher = new PrincipalSearcher(queryFilter);
         foreach (UserPrincipal user in searcher.FindAll().Cast<UserPrincipal>())
         {
             using (user)
@@ -144,17 +198,10 @@ internal static class LocalHelpers
     /// </returns>
     internal static IEnumerable<LocalGroup> GetMatchingLocalGroups(Predicate<GroupPrincipal> principalFilter, PrincipalContext principalContext)
     {
-        using var queryFolter = new GroupPrincipal(principalContext);
-        using var searcher = new PrincipalSearcher(queryFolter);
-        foreach (GroupPrincipal group in searcher.FindAll().Cast<GroupPrincipal>())
+        foreach (GroupPrincipal group in GetMatchingGroupPrincipals(principalFilter, principalContext))
         {
             using (group)
             {
-                if (!principalFilter(group))
-                {
-                    continue;
-                }
-
                 var localGroup = new LocalGroup()
                 {
                     Description = group.Description,
@@ -164,6 +211,74 @@ internal static class LocalHelpers
                 };
 
                 yield return localGroup;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Get all local groups.
+    /// </summary>
+    /// <param name="principalContext">
+    /// Encapsulates the server or domain against which all operations are performed.
+    /// </param>
+    /// <returns>
+    /// An <see cref="IEnumerable{GroupPrincipal}"/> object containing GroupPrincipal objects.
+    /// </returns>
+    internal static IEnumerable<GroupPrincipal> GetAllGroupPrincipals(PrincipalContext principalContext)
+        => GetMatchingGroupPrincipals(static _ => true, principalContext);
+
+    /// <summary>
+    /// Get local group whose a name satisfy the specified name.
+    /// </summary>
+    /// <param name="name">
+    /// A group name.
+    /// </param>
+    /// <param name="principalContext">
+    /// Encapsulates the server or domain against which all operations are performed.
+    /// </param>
+    /// <returns>
+    /// An <see cref="GroupPrincipal"/> object for a group with the specified name.
+    /// </returns>
+    internal static GroupPrincipal GetMatchingGroupPrincipalsByName(string name, PrincipalContext principalContext)
+        => GetMatchingGroupPrincipals(userPrincipal => name.Equals(userPrincipal.Name, StringComparison.CurrentCultureIgnoreCase), principalContext).FirstOrDefault();
+
+    /// <summary>
+    /// Get local group whose a security identifier (SID) satisfy the specified SID.
+    /// </summary>
+    /// <param name="sid">
+    /// A group a security identifier (SID).
+    /// </param>
+    /// <param name="principalContext">
+    /// Encapsulates the server or domain against which all operations are performed.
+    /// </param>
+    /// <returns>
+    /// An <see cref="GroupPrincipal"/> object for a group with the specified security identifier (SID).
+    /// </returns>
+    internal static GroupPrincipal GetMatchingGroupPrincipalsBySID(SecurityIdentifier sid, PrincipalContext principalContext)
+        => GetMatchingGroupPrincipals(userPrincipal => sid.Equals(userPrincipal.Sid), principalContext).FirstOrDefault();
+
+    /// <summary>
+    /// Get all local groups whose properties satisfy the specified predicate.
+    /// </summary>
+    /// <param name="principalFilter">
+    /// Predicate that determines whether a group satisfies the conditions.
+    /// </param>
+    /// <param name="principalContext">
+    /// Encapsulates the server or domain against which all operations are performed.
+    /// </param>
+    /// <returns>
+    /// An <see cref="IEnumerable{GroupPrincipal}"/> object containing GroupPrincipal
+    /// objects that satisfy the predicate condition.
+    /// </returns>
+    internal static IEnumerable<GroupPrincipal> GetMatchingGroupPrincipals(Predicate<GroupPrincipal> principalFilter, PrincipalContext principalContext)
+    {
+        using var queryFilter = new GroupPrincipal(principalContext);
+        using var searcher = new PrincipalSearcher(queryFilter);
+        foreach (GroupPrincipal group in searcher.FindAll().Cast<GroupPrincipal>())
+        {
+            if (principalFilter(group))
+            {
+                yield return group;
             }
         }
     }
