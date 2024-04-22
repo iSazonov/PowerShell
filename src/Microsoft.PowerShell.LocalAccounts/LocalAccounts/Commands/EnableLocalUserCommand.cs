@@ -107,17 +107,32 @@ namespace Microsoft.PowerShell.Commands
                     {
                         if (CheckShouldProcess(name))
                         {
-                            UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, name);
+                            using UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, name);
                             if (userPrincipal is not null)
                             {
+                                if (userPrincipal.Enabled.GetValueOrDefault())
+                                {
+                                    return;
+                                }
+
                                 userPrincipal.Enabled = true;
                                 userPrincipal.Save();
                             }
+                            else
+                            {
+                                WriteError(new ErrorRecord(new UserNotFoundException(name, name), "UserNotFound", ErrorCategory.ObjectNotFound, name));
+                            }
                         }
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                        ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: new LocalUser(name)));
                     }
                     catch (Exception ex)
                     {
-                        WriteError(ex.MakeErrorRecord());
+                        WriteError(new ErrorRecord(ex, "InvalidAddOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(name)));
                     }
                 }
             }
