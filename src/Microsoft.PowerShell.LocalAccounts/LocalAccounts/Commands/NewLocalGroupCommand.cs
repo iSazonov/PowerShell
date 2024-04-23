@@ -3,8 +3,8 @@
 
 #region Using directives
 using System;
-using System.Management.Automation;
 using System.DirectoryServices.AccountManagement;
+using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
 
 using Microsoft.PowerShell.LocalAccounts;
@@ -58,7 +58,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 if (CheckShouldProcess(Name))
                 {
-                    GroupPrincipal groupPrincipal = new GroupPrincipal(_principalContext, Name)
+                    using GroupPrincipal groupPrincipal = new GroupPrincipal(_principalContext, Name)
                     {
                         Description = Description,
                         GroupScope = GroupScope.Local

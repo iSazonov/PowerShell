@@ -107,7 +107,7 @@ namespace Microsoft.PowerShell.Commands
                     {
                         if (CheckShouldProcess(name))
                         {
-                            UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, name);
+                            using UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, name);
                             if (userPrincipal is not null)
                             {
                                 if (!userPrincipal.Enabled.GetValueOrDefault())
@@ -152,7 +152,7 @@ namespace Microsoft.PowerShell.Commands
                         var sidString = sid.ToString();
                         if (CheckShouldProcess(sidString))
                         {
-                            UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, sidString);
+                            using UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, sidString);
                             if (userPrincipal is not null)
                             {
                                 userPrincipal.Enabled = false;
@@ -181,7 +181,7 @@ namespace Microsoft.PowerShell.Commands
                     {
                         if (CheckShouldProcess(user.Name))
                         {
-                            UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, user.Name);
+                            using UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, user.Name);
                             if (userPrincipal is not null)
                             {
                                 userPrincipal.Enabled = false;

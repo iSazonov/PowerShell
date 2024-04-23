@@ -123,7 +123,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 try
                 {
-                    Principal principal = MakePrincipal(_groupPrincipal.Name, member);
+                    using Principal principal = MakePrincipal(_groupPrincipal.Name, member);
                     if (principal is not null)
                     {
                         _groupPrincipal.Members.Add(principal);
