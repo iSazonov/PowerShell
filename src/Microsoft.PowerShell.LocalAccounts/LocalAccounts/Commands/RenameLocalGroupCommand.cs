@@ -182,7 +182,6 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
             }
-
         }
 
         /// <summary>

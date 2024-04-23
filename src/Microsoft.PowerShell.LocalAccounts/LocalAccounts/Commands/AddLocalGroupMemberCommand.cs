@@ -110,7 +110,8 @@ namespace Microsoft.PowerShell.Commands
 
             if (_groupPrincipal is null)
             {
-                ThrowTerminatingError(new ErrorRecord(new GroupNotFoundException(Group.Name, GetTargetObject()), "GroupNotFound", ErrorCategory.ObjectNotFound, GetTargetObject()));
+                LocalGroup target = Group ?? new LocalGroup(Name) { SID = SID };
+                ThrowTerminatingError(new ErrorRecord(new GroupNotFoundException(Group.Name, target), "GroupNotFound", ErrorCategory.ObjectNotFound, target));
             }
         }
 
