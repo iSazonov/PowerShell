@@ -105,7 +105,7 @@ namespace Microsoft.PowerShell.Commands
             }
             catch (Exception ex)
             {
-                ThrowTerminatingError(new ErrorRecord(ex, "GroupNotFound", ErrorCategory.ObjectNotFound, GetTargetObject()));
+                ThrowTerminatingError(new ErrorRecord(ex, "GroupNotFound", ErrorCategory.ObjectNotFound, Group ?? new LocalGroup(Name) { SID = SID }));
             }
 
             if (_groupPrincipal is null)

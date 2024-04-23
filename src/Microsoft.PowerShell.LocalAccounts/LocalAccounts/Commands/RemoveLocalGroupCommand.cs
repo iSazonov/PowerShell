@@ -74,16 +74,9 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            try
-            {
-                ProcessGroups();
-                ProcessNames();
-                ProcessSids();
-            }
-            catch (Exception ex)
-            {
-                WriteError(ex.MakeErrorRecord());
-            }
+            ProcessGroups();
+            ProcessNames();
+            ProcessSids();
         }
         #endregion Cmdlet Overrides
 
