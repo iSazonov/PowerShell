@@ -3,10 +3,11 @@
 
 #region Using directives
 using System;
+using System.DirectoryServices;
+using System.DirectoryServices.AccountManagement;
 using System.Management.Automation;
-
 using System.Management.Automation.SecurityAccountsManager;
-using System.Management.Automation.SecurityAccountsManager.Extensions;
+using System.Security.Principal;
 
 using Microsoft.PowerShell.LocalAccounts;
 #endregion
@@ -21,10 +22,10 @@ namespace Microsoft.PowerShell.Commands
             SupportsShouldProcess = true,
             HelpUri = "https://go.microsoft.com/fwlink/?LinkID=717983")]
     [Alias("rnlu")]
-    public class RenameLocalUserCommand : Cmdlet
+    public class RenameLocalUserCommand : Cmdlet, IDisposable
     {
         #region Instance Data
-        private Sam sam = null;
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties
@@ -39,14 +40,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "InputObject")]
         [ValidateNotNull]
-        public Microsoft.PowerShell.Commands.LocalUser InputObject
-        {
-            get { return this.inputobject; }
-
-            set { this.inputobject = value; }
-        }
-
-        private Microsoft.PowerShell.Commands.LocalUser inputobject;
+        public LocalUser InputObject { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -59,14 +53,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        public string Name
-        {
-            get { return this.name; }
-
-            set { this.name = value; }
-        }
-
-        private string name;
+        public string Name { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "NewName".
@@ -76,14 +63,7 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(Mandatory = true,
                    Position = 1)]
         [ValidateNotNullOrEmpty]
-        public string NewName
-        {
-            get { return this.newname; }
-
-            set { this.newname = value; }
-        }
-
-        private string newname;
+        public string NewName { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -95,56 +75,31 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNull]
-        public System.Security.Principal.SecurityIdentifier SID
-        {
-            get { return this.sid; }
-
-            set { this.sid = value; }
-        }
-
-        private System.Security.Principal.SecurityIdentifier sid;
+        public SecurityIdentifier SID { get; set; }
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
-        /// <summary>
-        /// BeginProcessing method.
-        /// </summary>
-        protected override void BeginProcessing()
-        {
-            sam = new Sam();
-        }
-
         /// <summary>
         /// ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
         {
-            try
-            {
-                ProcessUser();
-                ProcessName();
-                ProcessSid();
-            }
-            catch (Exception ex)
-            {
-                WriteError(ex.MakeErrorRecord());
-            }
-        }
-
-        /// <summary>
-        /// EndProcessing method.
-        /// </summary>
-        protected override void EndProcessing()
-        {
-            if (sam != null)
-            {
-                sam.Dispose();
-                sam = null;
-            }
+            ProcessUser();
+            ProcessName();
+            ProcessSid();
         }
         #endregion Cmdlet Overrides
 
         #region Private Methods
+        private static LocalUser GetTargetUserObject(UserPrincipal user)
+            => new LocalUser()
+            {
+                Description = user.Description,
+                Name = user.Name,
+                PrincipalSource = Sam.GetPrincipalSource(user.Sid),
+                SID = user.Sid,
+            };
+
         /// <summary>
         /// Process user requested by -Name.
         /// </summary>
@@ -156,14 +111,35 @@ namespace Microsoft.PowerShell.Commands
         {
             if (Name != null)
             {
-                try
+                if (CheckShouldProcess(Name, NewName))
                 {
-                    if (CheckShouldProcess(Name, NewName))
-                        sam.RenameLocalUser(sam.GetLocalUser(Name), NewName);
-                }
-                catch (Exception ex)
-                {
-                    WriteError(ex.MakeErrorRecord());
+                    try
+                    {
+                        using UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, Name);
+                        if (userPrincipal is null)
+                        {
+                            WriteError(new ErrorRecord(new UserNotFoundException(Name, new LocalUser(Name)), "UserNotFound", ErrorCategory.ObjectNotFound, Name));
+                        }
+                        else
+                        {
+                            try
+                            {
+                                DirectoryEntry entry = (DirectoryEntry)userPrincipal.GetUnderlyingObject();
+                                entry.Rename(NewName);
+                                entry.CommitChanges();
+                            }
+                            catch (UnauthorizedAccessException)
+                            {
+                                var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteError(new ErrorRecord(ex, "InvalidRemoveLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(Name)));
+                    }
                 }
             }
         }
@@ -175,33 +151,78 @@ namespace Microsoft.PowerShell.Commands
         {
             if (SID != null)
             {
-                try
+                if (CheckShouldProcess(SID.Value, NewName))
                 {
-                    if (CheckShouldProcess(SID.ToString(), NewName))
-                        sam.RenameLocalUser(SID, NewName);
-                }
-                catch (Exception ex)
-                {
-                    WriteError(ex.MakeErrorRecord());
+                    try
+                    {
+                        UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, SID.Value);
+                        if (userPrincipal is null)
+                        {
+                            WriteError(new ErrorRecord(new UserNotFoundException(SID.Value, SID.Value), "UserNotFound", ErrorCategory.ObjectNotFound, SID.Value));
+                        }
+                        else
+                        {
+                            try
+                            {
+                                DirectoryEntry entry = (DirectoryEntry)userPrincipal.GetUnderlyingObject();
+                                entry.Rename(NewName);
+                                entry.CommitChanges();
+                            }
+                            catch (UnauthorizedAccessException)
+                            {
+                                var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteError(new ErrorRecord(ex, "InvalidRemoveLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = SID }));
+                    }
                 }
             }
         }
 
         /// <summary>
-        /// Process group given through -InputObject.
+        /// Process user given through -InputObject.
         /// </summary>
         private void ProcessUser()
         {
             if (InputObject != null)
             {
-                try
+                LocalUser user = InputObject;
+                if (CheckShouldProcess(user.Name ?? user.SID?.Value, NewName))
                 {
-                    if (CheckShouldProcess(InputObject.Name, NewName))
-                        sam.RenameLocalUser(InputObject, NewName);
-                }
-                catch (Exception ex)
-                {
-                    WriteError(ex.MakeErrorRecord());
+                    try
+                    {
+                        using UserPrincipal userPrincipal = user.SID is not null
+                            ? UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, user.SID.Value)
+                            : UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, user.Name);
+                        if (userPrincipal is null)
+                        {
+                            WriteError(new ErrorRecord(new UserNotFoundException(user.Name ?? user.SID.Value, user), "UserNotFound", ErrorCategory.ObjectNotFound, user));
+                        }
+                        else
+                        {
+                            try
+                            {
+                                DirectoryEntry entry = (DirectoryEntry)userPrincipal.GetUnderlyingObject();
+                                entry.Rename(NewName);
+                                entry.CommitChanges();
+                            }
+                            catch (UnauthorizedAccessException)
+                            {
+                                var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteError(new ErrorRecord(ex, "InvalidRemoveLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(user.Name) { SID = user.SID }));
+                    }
                 }
             }
         }
@@ -227,6 +248,37 @@ namespace Microsoft.PowerShell.Commands
             return ShouldProcess(userName, msg);
         }
         #endregion Private Methods
-    }
 
+        #region IDisposable interface
+        private bool _disposed;
+
+        /// <summary>
+        /// Dispose the DisableLocalUserCommand.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Implementation of IDisposable for both manual Dispose() and finalizer-called disposal of resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// Specified as true when Dispose() was called, false if this is called from the finalizer.
+        /// </param>
+        protected void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _principalContext?.Dispose();
+                }
+
+                _disposed = true;
+            }
+        }
+        #endregion
+    }
 }
