@@ -3,11 +3,11 @@
 
 #region Using directives
 using System;
+using System.DirectoryServices.AccountManagement;
 using System.Management.Automation;
-
 using System.Management.Automation.SecurityAccountsManager;
-using System.Management.Automation.SecurityAccountsManager.Extensions;
-
+using System.Security.Principal;
+using System.Text.RegularExpressions;
 using Microsoft.PowerShell.LocalAccounts;
 #endregion
 
@@ -21,10 +21,10 @@ namespace Microsoft.PowerShell.Commands
             SupportsShouldProcess = true,
             HelpUri = "https://go.microsoft.com/fwlink/?LinkId=717979")]
     [Alias("slg")]
-    public class SetLocalGroupCommand : Cmdlet
+    public class SetLocalGroupCommand : Cmdlet, IDisposable
     {
         #region Instance Data
-        private Sam sam = null;
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties
@@ -34,14 +34,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public string Description
-        {
-            get { return this.description; }
-
-            set { this.description = value; }
-        }
-
-        private string description;
+        public string Description { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "InputObject".
@@ -54,14 +47,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "InputObject")]
         [ValidateNotNull]
-        public Microsoft.PowerShell.Commands.LocalGroup InputObject
-        {
-            get { return this.inputobject; }
-
-            set { this.inputobject = value; }
-        }
-
-        private Microsoft.PowerShell.Commands.LocalGroup inputobject;
+        public LocalGroup InputObject { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -74,14 +60,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNull]
-        public string Name
-        {
-            get { return this.name; }
-
-            set { this.name = value; }
-        }
-
-        private string name;
+        public string Name { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -93,87 +72,114 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNull]
-        public System.Security.Principal.SecurityIdentifier SID
-        {
-            get { return this.sid; }
-
-            set { this.sid = value; }
-        }
-
-        private System.Security.Principal.SecurityIdentifier sid;
+        public SecurityIdentifier SID { get; set; }
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
-        /// <summary>
-        /// BeginProcessing method.
-        /// </summary>
-        protected override void BeginProcessing()
-        {
-            sam = new Sam();
-        }
-
         /// <summary>
         /// ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
         {
+            GroupPrincipal groupPrincipal = null;
             try
             {
-                LocalGroup group = null;
+                LocalGroup group = InputObject;
 
-                if (InputObject != null)
+                if (group is not null)
                 {
                     if (CheckShouldProcess(InputObject.ToString()))
-                        group = InputObject;
+                    {
+                        groupPrincipal = group.SID is not null
+                            ? GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, group.SID.Value)
+                            : GroupPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, group.Name);
+                    }
                 }
-                else if (Name != null)
+                else if (Name is not null)
                 {
-                    group = sam.GetLocalGroup(Name);
-
-                    if (!CheckShouldProcess(Name))
-                        group = null;
+                    if (CheckShouldProcess(Name))
+                    {
+                        groupPrincipal = GroupPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, Name);
+                    }
                 }
-                else if (SID != null)
+                else if (SID is not null)
                 {
-                    group = sam.GetLocalGroup(SID);
-
-                    if (!CheckShouldProcess(SID.ToString()))
-                        group = null;
+                    groupPrincipal = GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, SID.Value);
+                    if (!CheckShouldProcess(groupPrincipal.Name))
+                    {
+                        groupPrincipal = null;
+                    }
                 }
 
-                if (group != null)
+                if (groupPrincipal is not null)
                 {
-                    var delta = group.Clone();
-
-                    delta.Description = Description;
-                    sam.UpdateLocalGroup(group, delta);
+                    groupPrincipal.Description = Description;
+                    groupPrincipal.Save();
                 }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
             }
             catch (Exception ex)
             {
-                WriteError(ex.MakeErrorRecord());
+                WriteError(new ErrorRecord(ex, "InvalidSetLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: InputObject ?? new LocalGroup(Name) { SID = SID }));
             }
-        }
-
-        /// <summary>
-        /// EndProcessing method.
-        /// </summary>
-        protected override void EndProcessing()
-        {
-            if (sam != null)
+            finally
             {
-                sam.Dispose();
-                sam = null;
+                groupPrincipal?.Dispose();
             }
         }
         #endregion Cmdlet Overrides
 
         #region Private Methods
+        private static LocalGroup GetTargetGroupObject(GroupPrincipal group)
+            => new LocalGroup()
+            {
+                Description = group.Description,
+                Name = group.Name,
+                PrincipalSource = Sam.GetPrincipalSource(group.Sid),
+                SID = group.Sid,
+            };
+
         private bool CheckShouldProcess(string target)
         {
             return ShouldProcess(target, Strings.ActionSetGroup);
         }
         #endregion Private Methods
-    }
 
+        #region IDisposable interface
+        private bool _disposed;
+
+        /// <summary>
+        /// Dispose the DisableLocalUserCommand.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Implementation of IDisposable for both manual Dispose() and finalizer-called disposal of resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// Specified as true when Dispose() was called, false if this is called from the finalizer.
+        /// </param>
+        protected void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _principalContext?.Dispose();
+                }
+
+                _disposed = true;
+            }
+        }
+        #endregion
+    }
 }
