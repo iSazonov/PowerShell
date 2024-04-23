@@ -91,11 +91,11 @@ namespace Microsoft.PowerShell.Commands
                 {
                     _groupPrincipal = Group.SID is not null
                         ? GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.Sid, Group.SID.Value)
-                        : GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.Name, Group.Name);
+                        : GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.SamAccountName, Group.Name);
                 }
                 else if (Name is not null)
                 {
-                    _groupPrincipal = GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.Name, Name);
+                    _groupPrincipal = GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.SamAccountName, Name);
 
                 }
                 else if (SID is not null)

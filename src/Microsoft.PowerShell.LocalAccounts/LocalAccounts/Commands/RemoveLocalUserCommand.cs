@@ -108,7 +108,7 @@ namespace Microsoft.PowerShell.Commands
                     {
                         try
                         {
-                            using UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.Name, name);
+                            using UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, name);
                             if (userPrincipal is null)
                             {
                                 WriteError(new ErrorRecord(new UserNotFoundException(name, new LocalUser(name)), "UserNotFound", ErrorCategory.ObjectNotFound, name));
