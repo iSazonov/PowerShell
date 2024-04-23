@@ -107,8 +107,8 @@ namespace Microsoft.PowerShell.Commands
                     {
                         try
                         {
-                            using GroupPrincipal group = LocalHelpers.GetMatchingGroupPrincipalsByName(name, _principalContext);
-                            if (group is null)
+                            using GroupPrincipal groupPrincipal = GroupPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, name);
+                            if (groupPrincipal is null)
                             {
                                 WriteError(new ErrorRecord(new GroupNotFoundException(name, new LocalGroup(name)), "GroupNotFound", ErrorCategory.ObjectNotFound, name));
                             }
@@ -116,13 +116,13 @@ namespace Microsoft.PowerShell.Commands
                             {
                                 try
                                 {
-                                    group.Delete();
+                                    groupPrincipal.Delete();
                                 }
                                 catch (UnauthorizedAccessException)
                                 {
                                     var exc = new AccessDeniedException(Strings.AccessDenied);
 
-                                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(group)));
+                                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
                                 }
                             }
                         }
@@ -148,8 +148,8 @@ namespace Microsoft.PowerShell.Commands
                     {
                         try
                         {
-                            GroupPrincipal group = LocalHelpers.GetMatchingGroupPrincipalsBySID(sid, _principalContext);
-                            if (group is null)
+                            GroupPrincipal groupPrincipal = GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, sid.Value);
+                            if (groupPrincipal is null)
                             {
                                 WriteError(new ErrorRecord(new GroupNotFoundException(sid.Value, sid.Value), "GroupNotFound", ErrorCategory.ObjectNotFound, sid.Value));
                             }
@@ -157,13 +157,13 @@ namespace Microsoft.PowerShell.Commands
                             {
                                 try
                                 {
-                                    group.Delete();
+                                    groupPrincipal.Delete();
                                 }
                                 catch (UnauthorizedAccessException)
                                 {
                                     var exc = new AccessDeniedException(Strings.AccessDenied);
 
-                                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(group)));
+                                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
                                 }
                             }
                         }
@@ -191,7 +191,7 @@ namespace Microsoft.PowerShell.Commands
                         {
                             using GroupPrincipal groupPrincipal = group.SID is not null
                                 ? GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, group.SID.Value)
-                                : GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Name, group.Name);
+                                : GroupPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, group.Name);
                             if (groupPrincipal is null)
                             {
                                 WriteError(new ErrorRecord(new GroupNotFoundException(group.Name ?? group.SID.Value, group), "GroupNotFound", ErrorCategory.ObjectNotFound, group));
