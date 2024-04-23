@@ -3,8 +3,8 @@
 
 #region Using directives
 using System;
+using System.DirectoryServices.AccountManagement;
 using System.Management.Automation;
-
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
 
@@ -21,7 +21,7 @@ namespace Microsoft.PowerShell.Commands
             SupportsShouldProcess = true,
             HelpUri = "https://go.microsoft.com/fwlink/?LinkId=717981")]
     [Alias("nlu")]
-    public class NewLocalUserCommand : PSCmdlet
+    public class NewLocalUserCommand : PSCmdlet, IDisposable
     {
         #region Static Data
         // Names of object- and boolean-type parameters.
@@ -38,7 +38,7 @@ namespace Microsoft.PowerShell.Commands
         #endregion Static Data
 
         #region Instance Data
-        private Sam sam = null;
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties
@@ -47,14 +47,7 @@ namespace Microsoft.PowerShell.Commands
         /// Specifies when the user account will expire.
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
-        public System.DateTime AccountExpires
-        {
-            get { return this.accountexpires; }
-
-            set { this.accountexpires = value; }
-        }
-
-        private System.DateTime accountexpires;
+        public DateTime AccountExpires { get; set; }
 
         // This parameter added by hand (copied from SetLocalUserCommand), not by Cmdlet Designer
         /// <summary>
@@ -62,14 +55,7 @@ namespace Microsoft.PowerShell.Commands
         /// Specifies that the account will not expire.
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
-        public System.Management.Automation.SwitchParameter AccountNeverExpires
-        {
-            get { return this.accountneverexpires; }
-
-            set { this.accountneverexpires = value; }
-        }
-
-        private System.Management.Automation.SwitchParameter accountneverexpires;
+        public SwitchParameter AccountNeverExpires { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Description".
@@ -77,28 +63,14 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
         [ValidateNotNull]
-        public string Description
-        {
-            get { return this.description; }
-
-            set { this.description = value; }
-        }
-
-        private string description;
+        public string Description { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Disabled".
         /// Specifies whether this user account is enabled or disabled.
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
-        public System.Management.Automation.SwitchParameter Disabled
-        {
-            get { return this.disabled; }
-
-            set { this.disabled = value; }
-        }
-
-        private System.Management.Automation.SwitchParameter disabled;
+        public SwitchParameter Disabled { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "FullName".
@@ -107,14 +79,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
         [ValidateNotNull]
-        public string FullName
-        {
-            get { return this.fullname; }
-
-            set { this.fullname = value; }
-        }
-
-        private string fullname;
+        public string FullName { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -127,14 +92,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true)]
         [ValidateNotNullOrEmpty]
         [ValidateLength(1, 20)]
-        public string Name
-        {
-            get { return this.name; }
-
-            set { this.name = value; }
-        }
-
-        private string name;
+        public string Name { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Password".
@@ -145,14 +103,7 @@ namespace Microsoft.PowerShell.Commands
                    ParameterSetName = "Password",
                    ValueFromPipelineByPropertyName = true)]
         [ValidateNotNull]
-        public System.Security.SecureString Password
-        {
-            get { return this.password; }
-
-            set { this.password = value; }
-        }
-
-        private System.Security.SecureString password;
+        public System.Security.SecureString Password { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "PasswordChangeableDate".
@@ -161,14 +112,7 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(Mandatory = true,
                    ParameterSetName = "NoPassword",
                    ValueFromPipelineByPropertyName = true)]
-        public System.Management.Automation.SwitchParameter NoPassword
-        {
-            get { return this.nopassword; }
-
-            set { this.nopassword = value; }
-        }
-
-        private System.Management.Automation.SwitchParameter nopassword;
+        public SwitchParameter NoPassword { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "PasswordNeverExpires".
@@ -176,29 +120,15 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(ParameterSetName = "Password",
                    ValueFromPipelineByPropertyName = true)]
-        public System.Management.Automation.SwitchParameter PasswordNeverExpires
-        {
-            get { return this.passwordneverexpires; }
-
-            set { this.passwordneverexpires = value; }
-        }
-
-        private System.Management.Automation.SwitchParameter passwordneverexpires;
+        public SwitchParameter PasswordNeverExpires { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "UserMayNotChangePassword".
         /// Specifies whether the user is allowed to change the password on this
-        /// account. The default value is True.
+        /// account.
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
-        public System.Management.Automation.SwitchParameter UserMayNotChangePassword
-        {
-            get { return this.usermaynotchangepassword; }
-
-            set { this.usermaynotchangepassword = value; }
-        }
-
-        private System.Management.Automation.SwitchParameter usermaynotchangepassword;
+        public SwitchParameter UserMayNotChangePassword { get; set; }
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -212,8 +142,6 @@ namespace Microsoft.PowerShell.Commands
                 InvalidParametersException ex = new InvalidParametersException("AccountExpires", "AccountNeverExpires");
                 ThrowTerminatingError(ex.MakeErrorRecord());
             }
-
-            sam = new Sam();
         }
 
         /// <summary>
@@ -225,60 +153,79 @@ namespace Microsoft.PowerShell.Commands
             {
                 if (CheckShouldProcess(Name))
                 {
-                    var user = new LocalUser
+                    using UserPrincipal userPrincipal = new UserPrincipal(_principalContext)
                     {
-                        Name = Name,
                         Description = Description,
+                        DisplayName = FullName,
                         Enabled = true,
-                        FullName = FullName,
-                        UserMayChangePassword = true
+                        Name = Name,
+                        PasswordNeverExpires = PasswordNeverExpires.IsPresent,
+                        SamAccountName = Name,
+                        UserCannotChangePassword = false
                     };
 
-                    foreach (var paramName in parameterNames)
+                    foreach (string paramName in parameterNames)
                     {
                         if (this.HasParameter(paramName))
                         {
                             switch (paramName)
                             {
                                 case "AccountExpires":
-                                    user.AccountExpires = AccountExpires;
+                                    userPrincipal.AccountExpirationDate = AccountExpires;
                                     break;
 
                                 case "Disabled":
-                                    user.Enabled = !Disabled;
+                                    userPrincipal.Enabled = !Disabled;
                                     break;
 
                                 case "UserMayNotChangePassword":
-                                    user.UserMayChangePassword = !UserMayNotChangePassword;
+                                    userPrincipal.UserCannotChangePassword = UserMayNotChangePassword;
                                     break;
                             }
                         }
                     }
 
                     if (AccountNeverExpires.IsPresent)
-                        user.AccountExpires = null;
+                    {
+                        userPrincipal.AccountExpirationDate = null;
+                    }
 
-                    // Password will be null if NoPassword was given
-                    user = sam.CreateLocalUser(user, Password, PasswordNeverExpires.IsPresent);
+                    if (NoPassword.IsPresent)
+                    {
+                        // It is a breaking change.
+                        //  Windows PowerShell ignores a domain password policy and can create the account without password.
+                        //  AccountManagment API follows a domain password policy and can not create the account without password.
+                        userPrincipal.PasswordNotRequired = true;
+                        userPrincipal.Save();
+                    }
+                    else
+                    {
+                        userPrincipal.SetPassword(Password.AsString());
+                        userPrincipal.Save();
+                    }
+
+                    LocalUser user = LocalHelpers.GetLocalUser(userPrincipal);
 
                     WriteObject(user);
                 }
             }
+            catch (UnauthorizedAccessException)
+            {
+                var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: Name));
+            }
+            catch (PrincipalExistsException)
+            {
+                // It is a breaking change.
+                // Windows PowerShell ignores the error and set password for exisisting user. This looks like Windows PowerShell bug.
+                var exc = new UserExistsException(Name, Name);
+
+                WriteError(new ErrorRecord(exc, "UserExists", ErrorCategory.ResourceExists, targetObject: Name));
+            }
             catch (Exception ex)
             {
-                WriteError(ex.MakeErrorRecord());
-            }
-        }
-
-        /// <summary>
-        /// EndProcessing method.
-        /// </summary>
-        protected override void EndProcessing()
-        {
-            if (sam != null)
-            {
-                sam.Dispose();
-                sam = null;
+                WriteError(new ErrorRecord(ex, "InvalidAddOperation", ErrorCategory.InvalidOperation, targetObject: Name));
             }
         }
         #endregion Cmdlet Overrides
@@ -289,6 +236,37 @@ namespace Microsoft.PowerShell.Commands
             return ShouldProcess(target, Strings.ActionNewUser);
         }
         #endregion Private Methods
-    }
 
+        #region IDisposable interface
+        private bool _disposed;
+
+        /// <summary>
+        /// Dispose the DisableLocalUserCommand.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Implementation of IDisposable for both manual Dispose() and finalizer-called disposal of resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// Specified as true when Dispose() was called, false if this is called from the finalizer.
+        /// </param>
+        protected void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _principalContext?.Dispose();
+                }
+
+                _disposed = true;
+            }
+        }
+        #endregion
+    }
 }

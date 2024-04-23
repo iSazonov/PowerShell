@@ -102,7 +102,7 @@ internal static class LocalHelpers
         }
     }
 
-    private static LocalUser GetLocalUser(UserPrincipal user)
+    internal static LocalUser GetLocalUser(UserPrincipal user)
     {
         DateTime? lastPasswordSet = null;
         DateTime? passwordChangeableDate = null;
