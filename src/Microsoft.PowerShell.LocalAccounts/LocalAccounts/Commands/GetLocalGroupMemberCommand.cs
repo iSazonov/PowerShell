@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.DirectoryServices.AccountManagement;
-using System.Linq;
 using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
@@ -105,7 +104,7 @@ namespace Microsoft.PowerShell.Commands
             }
             catch (Exception ex)
             {
-                WriteError(ex.MakeErrorRecord());
+                WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: null));
             }
         }
         #endregion Cmdlet Overrides

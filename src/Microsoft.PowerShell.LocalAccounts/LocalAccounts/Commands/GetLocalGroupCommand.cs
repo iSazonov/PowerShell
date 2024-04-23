@@ -58,9 +58,16 @@ namespace Microsoft.PowerShell.Commands
         {
             if (Name == null && SID == null)
             {
-                foreach (LocalGroup LocalGroup in LocalHelpers.GetAllLocalGroups(_principalContext))
+                try
                 {
-                    WriteObject(LocalGroup);
+                    foreach (LocalGroup LocalGroup in LocalHelpers.GetAllLocalGroups(_principalContext))
+                    {
+                        WriteObject(LocalGroup);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: null));
                 }
 
                 return;
@@ -104,7 +111,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                     catch (Exception ex)
                     {
-                        WriteError(ex.MakeErrorRecord());
+                        WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(name)));
                     }
                 }
             }
@@ -125,7 +132,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                     catch (Exception ex)
                     {
-                        WriteError(ex.MakeErrorRecord());
+                        WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = sid}));
                     }
                 }
             }

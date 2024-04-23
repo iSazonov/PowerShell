@@ -60,9 +60,16 @@ namespace Microsoft.PowerShell.Commands
         {
             if (Name == null && SID == null)
             {
-                foreach (LocalUser localUser in LocalHelpers.GetAllLocalUsers(_principalContext))
+                try
                 {
-                    WriteObject(localUser);
+                    foreach (LocalUser localUser in LocalHelpers.GetAllLocalUsers(_principalContext))
+                    {
+                        WriteObject(localUser);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: null));
                 }
 
                 return;
@@ -105,7 +112,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                     catch (Exception ex)
                     {
-                        WriteError(ex.MakeErrorRecord());
+                        WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(name)));
                     }
                 }
             }
@@ -118,15 +125,15 @@ namespace Microsoft.PowerShell.Commands
         {
             if (SID != null)
             {
-                foreach (SecurityIdentifier s in SID)
+                foreach (SecurityIdentifier sid in SID)
                 {
                     try
                     {
-                        WriteObject(LocalHelpers.GetMatchingLocalUsersBySID(s, _principalContext));
+                        WriteObject(LocalHelpers.GetMatchingLocalUsersBySID(sid, _principalContext));
                     }
                     catch (Exception ex)
                     {
-                        WriteError(ex.MakeErrorRecord());
+                        WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = sid }));
                     }
                 }
             }
