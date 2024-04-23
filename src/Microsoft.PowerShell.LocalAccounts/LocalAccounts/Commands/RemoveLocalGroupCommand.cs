@@ -3,10 +3,12 @@
 
 #region Using directives
 using System;
-using System.Diagnostics.CodeAnalysis;
+using System.DirectoryServices.AccountManagement;
 using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
+using System.Security.Principal;
+
 using Microsoft.PowerShell.LocalAccounts;
 #endregion
 
@@ -20,10 +22,10 @@ namespace Microsoft.PowerShell.Commands
             SupportsShouldProcess = true,
             HelpUri = "https://go.microsoft.com/fwlink/?LinkId=717975")]
     [Alias("rlg")]
-    public class RemoveLocalGroupCommand : Cmdlet
+    public class RemoveLocalGroupCommand : Cmdlet, IDisposable
     {
         #region Instance Data
-        private Sam sam = null;
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties
@@ -37,15 +39,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "InputObject")]
         [ValidateNotNullOrEmpty]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public Microsoft.PowerShell.Commands.LocalGroup[] InputObject
-        {
-            get { return this.inputobject; }
-
-            set { this.inputobject = value; }
-        }
-
-        private Microsoft.PowerShell.Commands.LocalGroup[] inputobject;
+        public LocalGroup[] InputObject { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -58,15 +52,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public string[] Name
-        {
-            get { return this.name; }
-
-            set { this.name = value; }
-        }
-
-        private string[] name;
+        public string[] Name { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -79,26 +65,10 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNullOrEmpty]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public System.Security.Principal.SecurityIdentifier[] SID
-        {
-            get { return this.sid; }
-
-            set { this.sid = value; }
-        }
-
-        private System.Security.Principal.SecurityIdentifier[] sid;
+        public SecurityIdentifier[] SID { get; set; }
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
-        /// <summary>
-        /// BeginProcessing method.
-        /// </summary>
-        protected override void BeginProcessing()
-        {
-            sam = new Sam();
-        }
-
         /// <summary>
         /// ProcessRecord method.
         /// </summary>
@@ -115,21 +85,18 @@ namespace Microsoft.PowerShell.Commands
                 WriteError(ex.MakeErrorRecord());
             }
         }
-
-        /// <summary>
-        /// EndProcessing method.
-        /// </summary>
-        protected override void EndProcessing()
-        {
-            if (sam != null)
-            {
-                sam.Dispose();
-                sam = null;
-            }
-        }
         #endregion Cmdlet Overrides
 
         #region Private Methods
+        private static LocalGroup GetTargetGroupObject(GroupPrincipal group)
+            => new LocalGroup()
+            {
+                Description = group.Description,
+                Name = group.Name,
+                PrincipalSource = Sam.GetPrincipalSource(group.Sid),
+                SID = group.Sid,
+            };
+
         /// <summary>
         /// Process groups requested by -Name.
         /// </summary>
@@ -143,14 +110,33 @@ namespace Microsoft.PowerShell.Commands
             {
                 foreach (var name in Name)
                 {
-                    try
+                    if (CheckShouldProcess(name))
                     {
-                        if (CheckShouldProcess(name))
-                            sam.RemoveLocalGroup(sam.GetLocalGroup(name));
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteError(ex.MakeErrorRecord());
+                        try
+                        {
+                            using GroupPrincipal group = LocalHelpers.GetMatchingGroupPrincipalsByName(name, _principalContext);
+                            if (group is null)
+                            {
+                                WriteError(new ErrorRecord(new GroupNotFoundException(name, new LocalGroup(name)), "GroupNotFound", ErrorCategory.ObjectNotFound, name));
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    group.Delete();
+                                }
+                                catch (UnauthorizedAccessException)
+                                {
+                                    var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(group)));
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            WriteError(new ErrorRecord(ex, "InvalidRemoveLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup(name)));
+                        }
                     }
                 }
             }
@@ -163,16 +149,35 @@ namespace Microsoft.PowerShell.Commands
         {
             if (SID != null)
             {
-                foreach (var sid in SID)
+                foreach (SecurityIdentifier sid in SID)
                 {
-                    try
+                    if (CheckShouldProcess(sid.Value))
                     {
-                        if (CheckShouldProcess(sid.ToString()))
-                            sam.RemoveLocalGroup(sid);
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteError(ex.MakeErrorRecord());
+                        try
+                        {
+                            GroupPrincipal group = LocalHelpers.GetMatchingGroupPrincipalsBySID(sid, _principalContext);
+                            if (group is null)
+                            {
+                                WriteError(new ErrorRecord(new GroupNotFoundException(sid.Value, sid.Value), "GroupNotFound", ErrorCategory.ObjectNotFound, sid.Value));
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    group.Delete();
+                                }
+                                catch (UnauthorizedAccessException)
+                                {
+                                    var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(group)));
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            WriteError(new ErrorRecord(ex, "InvalidRemoveLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup() { SID = sid }));
+                        }
                     }
                 }
             }
@@ -185,16 +190,37 @@ namespace Microsoft.PowerShell.Commands
         {
             if (InputObject != null)
             {
-                foreach (var group in InputObject)
+                foreach (LocalGroup group in InputObject)
                 {
-                    try
+                    if (CheckShouldProcess(group.Name ?? group.SID?.Value))
                     {
-                        if (CheckShouldProcess(group.Name))
-                            sam.RemoveLocalGroup(group);
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteError(ex.MakeErrorRecord());
+                        try
+                        {
+                            using GroupPrincipal groupPrincipal = group.SID is not null
+                                ? GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, group.SID.Value)
+                                : GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Name, group.Name);
+                            if (groupPrincipal is null)
+                            {
+                                WriteError(new ErrorRecord(new GroupNotFoundException(group.Name ?? group.SID.Value, group), "GroupNotFound", ErrorCategory.ObjectNotFound, group));
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    groupPrincipal.Delete();
+                                }
+                                catch (UnauthorizedAccessException)
+                                {
+                                    var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            WriteError(new ErrorRecord(ex, "InvalidRemoveLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup(group.Name) { SID = group.SID }));
+                        }
                     }
                 }
             }
@@ -205,6 +231,37 @@ namespace Microsoft.PowerShell.Commands
             return ShouldProcess(target, Strings.ActionRemoveGroup);
         }
         #endregion Private Methods
-    }
 
+        #region IDisposable interface
+        private bool _disposed;
+
+        /// <summary>
+        /// Dispose the DisableLocalUserCommand.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Implementation of IDisposable for both manual Dispose() and finalizer-called disposal of resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// Specified as true when Dispose() was called, false if this is called from the finalizer.
+        /// </param>
+        protected void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _principalContext?.Dispose();
+                }
+
+                _disposed = true;
+            }
+        }
+        #endregion
+    }
 }
