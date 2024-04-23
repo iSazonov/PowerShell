@@ -3,10 +3,12 @@
 
 #region Using directives
 using System;
-using System.Diagnostics.CodeAnalysis;
+using System.DirectoryServices.AccountManagement;
 using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
+using System.Security.Principal;
+
 using Microsoft.PowerShell.LocalAccounts;
 #endregion
 
@@ -20,10 +22,10 @@ namespace Microsoft.PowerShell.Commands
             SupportsShouldProcess = true,
             HelpUri = "https://go.microsoft.com/fwlink/?LinkId=717982")]
     [Alias("rlu")]
-    public class RemoveLocalUserCommand : Cmdlet
+    public class RemoveLocalUserCommand : Cmdlet, IDisposable
     {
         #region Instance Data
-        private Sam sam = null;
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties
@@ -38,15 +40,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "InputObject")]
         [ValidateNotNullOrEmpty]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public Microsoft.PowerShell.Commands.LocalUser[] InputObject
-        {
-            get { return this.inputobject; }
-
-            set { this.inputobject = value; }
-        }
-
-        private Microsoft.PowerShell.Commands.LocalUser[] inputobject;
+        public LocalUser[] InputObject { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -59,15 +53,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public string[] Name
-        {
-            get { return this.name; }
-
-            set { this.name = value; }
-        }
-
-        private string[] name;
+        public string[] Name { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -80,57 +66,31 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNullOrEmpty]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public System.Security.Principal.SecurityIdentifier[] SID
-        {
-            get { return this.sid; }
-
-            set { this.sid = value; }
-        }
-
-        private System.Security.Principal.SecurityIdentifier[] sid;
+        public SecurityIdentifier[] SID { get; set; }
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
-        /// <summary>
-        /// BeginProcessing method.
-        /// </summary>
-        protected override void BeginProcessing()
-        {
-            sam = new Sam();
-        }
-
         /// <summary>
         /// ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
         {
-            try
-            {
-                ProcessUsers();
-                ProcessNames();
-                ProcessSids();
-            }
-            catch (Exception ex)
-            {
-                WriteError(ex.MakeErrorRecord());
-            }
-        }
-
-        /// <summary>
-        /// EndProcessing method.
-        /// </summary>
-        protected override void EndProcessing()
-        {
-            if (sam != null)
-            {
-                sam.Dispose();
-                sam = null;
-            }
+            ProcessUsers();
+            ProcessNames();
+            ProcessSids();
         }
         #endregion Cmdlet Overrides
 
         #region Private Methods
+        private static LocalUser GetTargetUserObject(UserPrincipal user)
+            => new LocalUser()
+            {
+                Description = user.Description,
+                Name = user.Name,
+                PrincipalSource = Sam.GetPrincipalSource(user.Sid),
+                SID = user.Sid,
+            };
+
         /// <summary>
         /// Process users requested by -Name.
         /// </summary>
@@ -144,14 +104,33 @@ namespace Microsoft.PowerShell.Commands
             {
                 foreach (var name in Name)
                 {
-                    try
+                    if (CheckShouldProcess(name))
                     {
-                        if (CheckShouldProcess(name))
-                            sam.RemoveLocalUser(sam.GetLocalUser(name));
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteError(ex.MakeErrorRecord());
+                        try
+                        {
+                            using UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.Name, name);
+                            if (userPrincipal is null)
+                            {
+                                WriteError(new ErrorRecord(new UserNotFoundException(name, new LocalUser(name)), "UserNotFound", ErrorCategory.ObjectNotFound, name));
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    userPrincipal.Delete();
+                                }
+                                catch (UnauthorizedAccessException)
+                                {
+                                    var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            WriteError(new ErrorRecord(ex, "InvalidRemoveLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(name)));
+                        }
                     }
                 }
             }
@@ -164,16 +143,35 @@ namespace Microsoft.PowerShell.Commands
         {
             if (SID != null)
             {
-                foreach (var sid in SID)
+                foreach (SecurityIdentifier sid in SID)
                 {
-                    try
+                    if (CheckShouldProcess(sid.Value))
                     {
-                        if (CheckShouldProcess(sid.ToString()))
-                            sam.RemoveLocalUser(sid);
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteError(ex.MakeErrorRecord());
+                        try
+                        {
+                            UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, sid.Value);
+                            if (userPrincipal is null)
+                            {
+                                WriteError(new ErrorRecord(new UserNotFoundException(sid.Value, sid.Value), "UserNotFound", ErrorCategory.ObjectNotFound, sid.Value));
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    userPrincipal.Delete();
+                                }
+                                catch (UnauthorizedAccessException)
+                                {
+                                    var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            WriteError(new ErrorRecord(ex, "InvalidRemoveLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = sid }));
+                        }
                     }
                 }
             }
@@ -186,16 +184,37 @@ namespace Microsoft.PowerShell.Commands
         {
             if (InputObject != null)
             {
-                foreach (var user in InputObject)
+                foreach (LocalUser user in InputObject)
                 {
-                    try
+                    if (CheckShouldProcess(user.Name ?? user.SID?.Value))
                     {
-                        if (CheckShouldProcess(user.Name))
-                            sam.RemoveLocalUser(user);
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteError(ex.MakeErrorRecord());
+                        try
+                        {
+                            using UserPrincipal userPrincipal = user.SID is not null
+                                ? UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, user.SID.Value)
+                                : UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, user.Name);
+                            if (userPrincipal is null)
+                            {
+                                WriteError(new ErrorRecord(new UserNotFoundException(user.Name ?? user.SID.Value, user), "GroupNotFound", ErrorCategory.ObjectNotFound, user));
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    userPrincipal.Delete();
+                                }
+                                catch (UnauthorizedAccessException)
+                                {
+                                    var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            WriteError(new ErrorRecord(ex, "InvalidRemoveLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup(user.Name) { SID = user.SID }));
+                        }
                     }
                 }
             }
@@ -206,6 +225,37 @@ namespace Microsoft.PowerShell.Commands
             return ShouldProcess(target, Strings.ActionRemoveUser);
         }
         #endregion Private Methods
-    }
 
+        #region IDisposable interface
+        private bool _disposed;
+
+        /// <summary>
+        /// Dispose the DisableLocalUserCommand.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Implementation of IDisposable for both manual Dispose() and finalizer-called disposal of resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// Specified as true when Dispose() was called, false if this is called from the finalizer.
+        /// </param>
+        protected void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _principalContext?.Dispose();
+                }
+
+                _disposed = true;
+            }
+        }
+        #endregion
+    }
 }
