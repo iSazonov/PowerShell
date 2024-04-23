@@ -4,9 +4,8 @@
 #region Using directives
 using System;
 using System.Management.Automation;
-
+using System.DirectoryServices.AccountManagement;
 using System.Management.Automation.SecurityAccountsManager;
-using System.Management.Automation.SecurityAccountsManager.Extensions;
 
 using Microsoft.PowerShell.LocalAccounts;
 #endregion
@@ -21,10 +20,10 @@ namespace Microsoft.PowerShell.Commands
             SupportsShouldProcess = true,
             HelpUri = "https://go.microsoft.com/fwlink/?LinkId=717990")]
     [Alias("nlg")]
-    public class NewLocalGroupCommand : Cmdlet
+    public class NewLocalGroupCommand : Cmdlet, IDisposable
     {
         #region Instance Data
-        private Sam sam = null;
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties
@@ -34,14 +33,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
         [ValidateNotNull]
-        public string Description
-        {
-            get { return this.description; }
-
-            set { this.description = value; }
-        }
-
-        private string description;
+        public string Description { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -53,25 +45,10 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true)]
         [ValidateNotNullOrEmpty]
         [ValidateLength(1, 256)]
-        public string Name
-        {
-            get { return this.name; }
-
-            set { this.name = value; }
-        }
-
-        private string name;
+        public string Name { get; set; }
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
-        /// <summary>
-        /// BeginProcessing method.
-        /// </summary>
-        protected override void BeginProcessing()
-        {
-            sam = new Sam();
-        }
-
         /// <summary>
         /// ProcessRecord method.
         /// </summary>
@@ -81,30 +58,40 @@ namespace Microsoft.PowerShell.Commands
             {
                 if (CheckShouldProcess(Name))
                 {
-                    var group = sam.CreateLocalGroup(new LocalGroup
+                    GroupPrincipal groupPrincipal = new GroupPrincipal(_principalContext, Name)
                     {
                         Description = Description,
-                        Name = Name
-                    });
+                        GroupScope = GroupScope.Local
+                    };
+
+                    groupPrincipal.Save();
+
+                    LocalGroup group = new LocalGroup(Name)
+                    {
+                        Description = Description,
+                        PrincipalSource = PrincipalSource.Local,
+                        SID = groupPrincipal.Sid,
+
+                    };
 
                     WriteObject(group);
                 }
             }
+            catch (UnauthorizedAccessException)
+            {
+                var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: Name));
+            }
+            catch (PrincipalOperationException ex) when (ex.ErrorCode == -2147023517)
+            {
+                var exc = new GroupExistsException(Name, Name);
+
+                WriteError(new ErrorRecord(exc, "GroupExists", ErrorCategory.ResourceExists, targetObject: Name));
+            }
             catch (Exception ex)
             {
-                WriteError(ex.MakeErrorRecord());
-            }
-        }
-
-        /// <summary>
-        /// EndProcessing method.
-        /// </summary>
-        protected override void EndProcessing()
-        {
-            if (sam != null)
-            {
-                sam.Dispose();
-                sam = null;
+                WriteError(new ErrorRecord(ex, "InvalidAddOperation", ErrorCategory.InvalidOperation, targetObject: Name));
             }
         }
         #endregion Cmdlet Overrides
@@ -115,6 +102,37 @@ namespace Microsoft.PowerShell.Commands
             return ShouldProcess(target, Strings.ActionNewGroup);
         }
         #endregion Private Methods
-    }
 
+        #region IDisposable interface
+        private bool _disposed;
+
+        /// <summary>
+        /// Dispose the DisableLocalUserCommand.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Implementation of IDisposable for both manual Dispose() and finalizer-called disposal of resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// Specified as true when Dispose() was called, false if this is called from the finalizer.
+        /// </param>
+        protected void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _principalContext?.Dispose();
+                }
+
+                _disposed = true;
+            }
+        }
+        #endregion
+    }
 }
