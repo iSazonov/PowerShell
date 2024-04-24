@@ -4,7 +4,6 @@
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Principal;
-using System.Text.RegularExpressions;
 
 using Microsoft.PowerShell.Commands;
 using Microsoft.PowerShell.LocalAccounts;
@@ -33,8 +32,12 @@ namespace System.Management.Automation.SecurityAccountsManager.Extensions
                                                   bool allowSidConstants = false)
         {
             if (!allowSidConstants)
+            {
                 if (!(s.Length > 2 && s.StartsWith("S-", StringComparison.Ordinal) && char.IsDigit(s[2])))
+                {
                     return null;
+                }
+            }
 
             SecurityIdentifier sid = null;
 
@@ -72,17 +75,19 @@ namespace System.Management.Automation.SecurityAccountsManager.Extensions
         /// </returns>
         internal static bool HasParameter(this PSCmdlet cmdlet, string parameterName)
         {
-            var invocation = cmdlet.MyInvocation;
-            if (invocation != null)
+            InvocationInfo invocation = cmdlet.MyInvocation;
+            if (invocation is not null)
             {
-                var parameters = invocation.BoundParameters;
+                Collections.Generic.Dictionary<string, object> parameters = invocation.BoundParameters;
 
-                if (parameters != null)
+                if (parameters is not null)
                 {
                     // PowerShell sets the parameter names in the BoundParameters dictionary
                     // to their "proper" casing, so we don't have to do a case-insensitive search.
                     if (parameters.ContainsKey(parameterName))
+                    {
                         return true;
+                    }
                 }
             }
 
@@ -107,7 +112,7 @@ namespace System.Management.Automation.SecurityAccountsManager.Extensions
             byte[] sidBinary = new byte[sid.BinaryLength];
             sid.GetBinaryForm(sidBinary, 0);
 
-            return System.BitConverter.ToUInt32(sidBinary, sidBinary.Length - 4);
+            return BitConverter.ToUInt32(sidBinary, sidBinary.Length - 4);
         }
 
         /// <summary>
@@ -187,10 +192,10 @@ namespace System.Management.Automation.SecurityAccountsManager.Extensions
         {
             // This part is somewhat less than beautiful, but it prevents
             // having to have multiple exception handlers in every cmdlet command.
-            var exTemp = ex as LocalAccountsException;
-
-            if (exTemp != null)
+            if (ex is LocalAccountsException exTemp)
+            {
                 return MakeErrorRecord(exTemp, target ?? exTemp.Target);
+            }
 
             return new ErrorRecord(ex,
                                    Strings.UnspecifiedError,
