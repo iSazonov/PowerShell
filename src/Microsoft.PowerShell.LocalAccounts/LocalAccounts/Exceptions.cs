@@ -230,15 +230,6 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Creates a message from the specified error code.
-        /// </summary>
-        /// <param name="errorCode"></param>
-        public InvalidPasswordException(uint errorCode)
-            : base(StringUtil.GetSystemMessage(errorCode), null, ErrorCategory.InvalidArgument)
-        {
-        }
-
-        /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>

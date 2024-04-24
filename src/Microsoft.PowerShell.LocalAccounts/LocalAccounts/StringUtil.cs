@@ -36,28 +36,5 @@ namespace System.Management.Automation.SecurityAccountsManager
         {
             return string.Format(CultureInfo.CurrentCulture, fmt, p0);
         }
-
-        internal static string FormatMessage(uint messageId, string[] args)
-        {
-            var message = new System.Text.StringBuilder(256);
-            UInt32 flags = Win32.FORMAT_MESSAGE_FROM_SYSTEM;
-
-            if (args == null)
-                flags |= Win32.FORMAT_MESSAGE_IGNORE_INSERTS;
-            else
-                flags |= Win32.FORMAT_MESSAGE_ARGUMENT_ARRAY;
-
-            var length = Win32.FormatMessage(flags, IntPtr.Zero, messageId, 0, message, 256, args);
-
-            if (length > 0)
-                return message.ToString();
-
-            return null;
-        }
-
-        internal static string GetSystemMessage(uint messageId)
-        {
-            return FormatMessage(messageId, null);
-        }
     }
 }
