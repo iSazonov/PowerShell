@@ -3,12 +3,12 @@
 
 #region Using directives
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.DirectoryServices.AccountManagement;
 using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
 using System.Security.Principal;
+
 using Microsoft.PowerShell.LocalAccounts;
 #endregion
 
@@ -22,10 +22,15 @@ namespace Microsoft.PowerShell.Commands
             SupportsShouldProcess = true,
             HelpUri = "https://go.microsoft.com/fwlink/?LinkId=717989")]
     [Alias("rlgm")]
-    public class RemoveLocalGroupMemberCommand : PSCmdlet
+    public class RemoveLocalGroupMemberCommand : PSCmdlet, IDisposable
     {
         #region Instance Data
-        private Sam sam = null;
+        // Explicitly point a domain name of the computer otherwise a domain name of current user would be used by default.
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Domain, LocalHelpers.GetComputerDomainName());
+        private GroupPrincipal _groupPrincipal;
+
+        // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
+        private PrincipalContext _groupPrincipalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties
@@ -37,14 +42,7 @@ namespace Microsoft.PowerShell.Commands
                    Position = 0,
                    ParameterSetName = "Group")]
         [ValidateNotNull]
-        public Microsoft.PowerShell.Commands.LocalGroup Group
-        {
-            get { return this.group; }
-
-            set { this.group = value; }
-        }
-
-        private Microsoft.PowerShell.Commands.LocalGroup group;
+        public LocalGroup Group { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Member".
@@ -57,15 +55,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipeline = true,
                    ValueFromPipelineByPropertyName = true)]
         [ValidateNotNullOrEmpty]
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public Microsoft.PowerShell.Commands.LocalPrincipal[] Member
-        {
-            get { return this.member; }
-
-            set { this.member = value; }
-        }
-
-        private Microsoft.PowerShell.Commands.LocalPrincipal[] member;
+        public LocalPrincipal[] Member { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -75,14 +65,7 @@ namespace Microsoft.PowerShell.Commands
                    Position = 0,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        public string Name
-        {
-            get { return this.name; }
-
-            set { this.name = value; }
-        }
-
-        private string name;
+        public string Name { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -92,14 +75,7 @@ namespace Microsoft.PowerShell.Commands
                    Position = 0,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNull]
-        public System.Security.Principal.SecurityIdentifier SID
-        {
-            get { return this.sid; }
-
-            set { this.sid = value; }
-        }
-
-        private System.Security.Principal.SecurityIdentifier sid;
+        public SecurityIdentifier SID { get; set; }
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -108,7 +84,34 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void BeginProcessing()
         {
-            sam = new Sam();
+            try
+            {
+                if (Group is not null)
+                {
+                    _groupPrincipal = Group.SID is not null
+                        ? GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.Sid, Group.SID.Value)
+                        : GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.SamAccountName, Group.Name);
+                }
+                else if (Name is not null)
+                {
+                    _groupPrincipal = GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.SamAccountName, Name);
+
+                }
+                else if (SID is not null)
+                {
+                    _groupPrincipal = GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.Sid, SID.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                ThrowTerminatingError(new ErrorRecord(ex, "GroupNotFound", ErrorCategory.ObjectNotFound, Group ?? new LocalGroup(Name) { SID = SID }));
+            }
+
+            if (_groupPrincipal is null)
+            {
+                LocalGroup target = Group ?? new LocalGroup(Name) { SID = SID };
+                ThrowTerminatingError(new ErrorRecord(new GroupNotFoundException(Group.Name, target), "GroupNotFound", ErrorCategory.ObjectNotFound, target));
+            }
         }
 
         /// <summary>
@@ -116,102 +119,114 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            try
+            foreach (LocalPrincipal member in Member)
             {
-                if (Group != null)
-                    ProcessGroup(Group);
-                else if (Name != null)
-                    ProcessName(Name);
-                else if (SID != null)
-                    ProcessSid(SID);
-            }
-            catch (GroupNotFoundException ex)
-            {
-                WriteError(ex.MakeErrorRecord());
-            }
-        }
+                try
+                {
+                    using Principal principal = MakePrincipal(_groupPrincipal.Name, member);
+                    if (principal is not null)
+                    {
+                        _groupPrincipal.Members.Remove(principal);
+                        _groupPrincipal.Save();
+                    }
+                }
+                catch (UnauthorizedAccessException)
+                {
 
-        /// <summary>
-        /// EndProcessing method.
-        /// </summary>
-        protected override void EndProcessing()
-        {
-            if (sam != null)
-            {
-                sam.Dispose();
-                sam = null;
+                    var exc = new AccessDeniedException(member);
+                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetObject()));
+                }
+                catch (PrincipalExistsException)
+                {
+                    var exc = new MemberExistsException(member.Name, _groupPrincipal.Name, GetTargetObject());
+                    WriteError(new ErrorRecord(exc, "MemberExists", ErrorCategory.ResourceExists, targetObject: GetTargetObject()));
+                }
+                catch (Exception ex)
+                {
+                    WriteError(new ErrorRecord(ex, "InvalidAddOperation", ErrorCategory.InvalidOperation, targetObject: GetTargetObject()));
+
+                }
             }
         }
         #endregion Cmdlet Overrides
 
         #region Private Methods
+        private LocalGroup GetTargetObject()
+            => new LocalGroup()
+            {
+                Description = _groupPrincipal.Description,
+                Name = _groupPrincipal.Name,
+                PrincipalSource = Sam.GetPrincipalSource(_groupPrincipal.Sid),
+                SID = _groupPrincipal.Sid,
+            };
 
         /// <summary>
-        /// Creates a list of <see cref="LocalPrincipal"/> objects
+        /// Creates a <see cref="Principal"/> object
         /// ready to be processed by the cmdlet.
         /// </summary>
         /// <param name="groupId">
-        /// Name or SID (as a string) of the group we'll be removing from.
-        /// This string is used primarily for specifying the target
+        /// Name or SID (as a string) of the group we'll be adding to.
+        /// This string is used only for specifying the target
         /// in WhatIf scenarios.
         /// </param>
         /// <param name="member">
-        /// LocalPrincipal object to be processed
+        /// <see cref="LocalPrincipal"/> object to be processed.
         /// </param>
         /// <returns>
-        /// LocalPrincipal object processed and ready to be removed
+        /// A <see cref="Principal"/> object to be added to the group.
         /// </returns>
         /// <remarks>
         /// <para>
-        /// LocalPrincipal object in the Member parameter may not be complete,
+        /// <see cref="LocalPrincipal"/> objects in the Member parameter may not be complete,
         /// particularly those created from a name or a SID string given to the
-        /// Member cmdlet parameter. The object returned from this method contains at the very least, contain a valid SID.
+        /// Member cmdlet parameter. The object returned from this method contains
+        /// , at the very least, a valid SID.
         /// </para>
         /// <para>
-        /// Any Member object provided by name or SID string will be looked up
+        /// Any Member objects provided by name or SID string will be looked up
         /// to ensure that such an object exists. If an object is not found,
-        /// an error message is displayed by PowerShell and null will be returned from this method
+        /// null will be returned.
         /// </para>
         /// <para>
         /// This method also handles the WhatIf scenario. If the Cmdlet's
-        /// <b>ShouldProcess</b> method returns false on any Member object
+        /// ShouldProcess method returns false on any Member object,
+        /// that object will not be included in the returned List.
         /// </para>
         /// </remarks>
-        private LocalPrincipal MakePrincipal(string groupId, LocalPrincipal member)
+        private Principal MakePrincipal(string groupId, LocalPrincipal member)
         {
-            LocalPrincipal principal = null;
+            Principal principal;
 
-            // if the member has a SID, we can use it directly
-            if (member.SID != null)
+            // If the member has a SID, we can use it directly.
+            if (member.SID is not null)
             {
-                principal = member;
+                principal = Principal.FindByIdentity(_principalContext, IdentityType.Sid, member.SID.Value);
             }
-            else    // otherwise it must have been constructed by name
+            else
             {
+                // Otherwise it must have been constructed by name.
                 SecurityIdentifier sid = this.TrySid(member.Name);
 
-                if (sid != null)
+                if (sid is not null)
                 {
                     member.SID = sid;
-                    principal = member;
+                    principal = Principal.FindByIdentity(_principalContext, IdentityType.Sid, member.SID.Value);
                 }
                 else
                 {
-                    try
-                    {
-                        principal = sam.LookupAccount(member.Name);
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteError(ex.MakeErrorRecord());
-                    }
+                    principal = Principal.FindByIdentity(_principalContext, IdentityType.SamAccountName, member.Name);
                 }
             }
 
-            if (CheckShouldProcess(principal, groupId))
-                return principal;
+            if (principal is null)
+            {
+                // It is a breaking change. AccountManagement API can not add a member by a fake SID, Windows PowerShell can do.
+                WriteError(new ErrorRecord(new PrincipalNotFoundException(member.Name ?? member.SID.Value, member), "PrincipalNotFound", ErrorCategory.ObjectNotFound, member));
 
-            return null;
+                return null;
+            }
+
+            return CheckShouldProcess(principal, groupId) ? principal : null;
         }
 
         /// <summary>
@@ -219,81 +234,58 @@ namespace Microsoft.PowerShell.Commands
         /// Just a wrapper around Cmdlet.ShouldProcess, with localized string
         /// formatting.
         /// </summary>
-        /// <param name="principal">Name of the principal to be removed.</param>
+        /// <param name="principal">Name of the principal to be added.</param>
         /// <param name="groupName">
-        /// Name of the group from which the members will be removed.
+        /// Name of the group to which the members will be added.
         /// </param>
         /// <returns>
         /// True if the principal should be processed, false otherwise.
         /// </returns>
-        private bool CheckShouldProcess(LocalPrincipal principal, string groupName)
+        private bool CheckShouldProcess(Principal principal, string groupName)
         {
             if (principal == null)
+            {
                 return false;
+            }
 
-            string msg = StringUtil.Format(Strings.ActionRemoveGroupMember, principal.ToString());
+            string msg = StringUtil.Format(Strings.ActionAddGroupMember, principal.Name);
 
             return ShouldProcess(groupName, msg);
         }
-
-        /// <summary>
-        /// Remove members from a group.
-        /// </summary>
-        /// <param name="group">
-        /// A <see cref="LocalGroup"/> object representing the group from which
-        /// the members will be removed.
-        /// </param>
-        private void ProcessGroup(LocalGroup group)
-        {
-            string groupId = group.Name ?? group.SID.ToString();
-            foreach (var member in this.Member)
-            {
-                LocalPrincipal principal = MakePrincipal(groupId, member);
-                if (principal != null)
-                {
-                    var ex = sam.RemoveLocalGroupMember(group, principal);
-                    if (ex != null)
-                    {
-                        WriteError(ex.MakeErrorRecord());
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Remove members from a group specified by name.
-        /// </summary>
-        /// <param name="name">
-        /// The name of the group from which the members will be removed.
-        /// </param>
-        private void ProcessName(string name)
-        {
-            ProcessGroup(sam.GetLocalGroup(name));
-        }
-
-        /// <summary>
-        /// Remove members from a group specified by SID.
-        /// </summary>
-        /// <param name="groupSid">
-        /// A <see cref="SecurityIdentifier"/> object identifying the group
-        /// from which the members will be removed.
-        /// </param>
-        private void ProcessSid(SecurityIdentifier groupSid)
-        {
-            foreach (var member in this.Member)
-            {
-                LocalPrincipal principal = MakePrincipal(groupSid.ToString(), member);
-                if (principal != null)
-                {
-                    var ex = sam.RemoveLocalGroupMember(groupSid, principal);
-                    if (ex != null)
-                    {
-                        WriteError(ex.MakeErrorRecord());
-                    }
-                }
-            }
-        }
         #endregion Private Methods
-    }
 
+        #region IDisposable interface
+        private bool _disposed;
+
+        /// <summary>
+        /// Dispose the DisableLocalUserCommand.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Implementation of IDisposable for both manual Dispose() and finalizer-called disposal of resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// Specified as true when Dispose() was called, false if this is called from the finalizer.
+        /// </param>
+        protected void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _groupPrincipal.Dispose();
+                    _groupPrincipalContext.Dispose();
+                    _principalContext?.Dispose();
+                }
+
+                _disposed = true;
+            }
+        }
+        #endregion
+    }
 }
