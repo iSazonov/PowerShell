@@ -238,6 +238,12 @@ namespace Microsoft.PowerShell.Commands
 
                 ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: Name));
             }
+            catch (PasswordException)
+            {
+                var exc = new InvalidPasswordException(Strings.InvalidPassword);
+
+                ThrowTerminatingError(new ErrorRecord(exc, "InvalidPassword", ErrorCategory.PermissionDenied, targetObject: Name));
+            }
             catch (Exception ex)
             {
                 WriteError(new ErrorRecord(ex, "InvalidAddOperation", ErrorCategory.InvalidOperation, targetObject: Name));
