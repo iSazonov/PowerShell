@@ -105,8 +105,9 @@ namespace Microsoft.PowerShell.Commands
                 else if (SID is not null)
                 {
                     groupPrincipal = GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, SID.Value);
-                    if (!CheckShouldProcess(groupPrincipal.Name))
+                    if (groupPrincipal is not null && !CheckShouldProcess(groupPrincipal.Name))
                     {
+                        groupPrincipal.Dispose();
                         groupPrincipal = null;
                     }
                 }
