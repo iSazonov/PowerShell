@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 using System.Globalization;
-using System.Management.Automation.SecurityAccountsManager.Native;
 
 namespace System.Management.Automation.SecurityAccountsManager
 {
@@ -11,7 +10,6 @@ namespace System.Management.Automation.SecurityAccountsManager
     /// </summary>
     internal static class StringUtil
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal static string Format(string str)
         {
             return string.Format(CultureInfo.CurrentCulture, str);
