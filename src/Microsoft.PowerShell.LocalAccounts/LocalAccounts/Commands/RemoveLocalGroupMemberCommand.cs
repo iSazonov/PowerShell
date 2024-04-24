@@ -136,10 +136,10 @@ namespace Microsoft.PowerShell.Commands
                     var exc = new AccessDeniedException(member);
                     ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetObject()));
                 }
-                catch (PrincipalExistsException)
+                catch (PrincipalNotFoundException)
                 {
-                    var exc = new MemberExistsException(member.Name, _groupPrincipal.Name, GetTargetObject());
-                    WriteError(new ErrorRecord(exc, "MemberExists", ErrorCategory.ResourceExists, targetObject: GetTargetObject()));
+                    var exc = new MemberNotFoundException(member.Name, _groupPrincipal.Name);
+                    WriteError(new ErrorRecord(exc, "PrincipalNotFound", ErrorCategory.ObjectNotFound, targetObject: GetTargetObject()));
                 }
                 catch (Exception ex)
                 {
