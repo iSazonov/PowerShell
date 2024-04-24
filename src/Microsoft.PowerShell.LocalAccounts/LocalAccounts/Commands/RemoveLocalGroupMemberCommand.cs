@@ -248,7 +248,7 @@ namespace Microsoft.PowerShell.Commands
                 return false;
             }
 
-            string msg = StringUtil.Format(Strings.ActionAddGroupMember, principal.Name);
+            string msg = StringUtil.Format(Strings.ActionRemoveGroupMember, principal.Name);
 
             return ShouldProcess(groupName, msg);
         }
