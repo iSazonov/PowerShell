@@ -149,7 +149,7 @@ namespace Microsoft.PowerShell.Commands
                 }
                 catch (Exception ex)
                 {
-                    WriteError(new ErrorRecord(ex, "InvalidAddOperation", ErrorCategory.InvalidOperation, targetObject: GetTargetObject()));
+                    WriteError(new ErrorRecord(ex, "InvalidAddLocalGroupMemberOperation", ErrorCategory.InvalidOperation, targetObject: GetTargetObject()));
 
                 }
             }
@@ -286,7 +286,7 @@ namespace Microsoft.PowerShell.Commands
                 if (disposing)
                 {
                     _groupPrincipal?.Dispose();
-                    _groupPrincipalContext.Dispose();
+                    _groupPrincipalContext?.Dispose();
                     _principalContext?.Dispose();
                 }
 
