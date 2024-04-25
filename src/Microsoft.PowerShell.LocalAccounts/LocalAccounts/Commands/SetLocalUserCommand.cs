@@ -67,7 +67,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter]
         [ValidateNotNull]
-        public string Description { get; set; }
+        public string Description { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "FullName".
@@ -76,7 +76,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter]
         [ValidateNotNull]
-        public string FullName { get; set; }
+        public string FullName { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "InputObject".
@@ -89,7 +89,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "InputObject")]
         [ValidateNotNull]
-        public LocalUser InputObject { get; set; }
+        public LocalUser InputObject { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -101,7 +101,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Name")]
         [ValidateNotNullOrEmpty]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Password".
@@ -109,7 +109,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter]
         [ValidateNotNull]
-        public System.Security.SecureString Password { get; set; }
+        public System.Security.SecureString Password { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "PasswordNeverExpires".
@@ -128,7 +128,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNull]
-        public SecurityIdentifier SID { get; set; }
+        public SecurityIdentifier SID { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "UserMayChangePassword".
@@ -157,7 +157,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            UserPrincipal userPrincipal = new UserPrincipal(_principalContext);
+            UserPrincipal? userPrincipal = new UserPrincipal(_principalContext);
             try
             {
                 if (InputObject is not null)
@@ -252,7 +252,7 @@ namespace Microsoft.PowerShell.Commands
         #endregion Cmdlet Overrides
 
         #region Private Methods
-        private bool CheckShouldProcess(string target)
+        private bool CheckShouldProcess(string? target)
         {
             return ShouldProcess(target, Strings.ActionSetUser);
         }

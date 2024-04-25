@@ -53,7 +53,7 @@ internal static class LocalHelpers
     /// <returns>
     /// An <see cref="LocalUser"/> object for a user with the specified name.
     /// </returns>
-    internal static LocalUser GetMatchingLocalUsersByName(string name, PrincipalContext principalContext)
+    internal static LocalUser? GetMatchingLocalUsersByName(string name, PrincipalContext principalContext)
         => GetMatchingLocalUsers(userPrincipal => name.Equals(userPrincipal.Name, StringComparison.CurrentCultureIgnoreCase), principalContext).FirstOrDefault();
 
     /// <summary>
@@ -68,7 +68,7 @@ internal static class LocalHelpers
     /// <returns>
     /// An <see cref="LocalUser"/> object for a user with the specified security identifier (SID).
     /// </returns>
-    internal static LocalUser GetMatchingLocalUsersBySID(SecurityIdentifier sid, PrincipalContext principalContext)
+    internal static LocalUser? GetMatchingLocalUsersBySID(SecurityIdentifier sid, PrincipalContext principalContext)
         => GetMatchingLocalUsers(userPrincipal => sid.Equals(userPrincipal.Sid), principalContext).FirstOrDefault();
 
     /// <summary>
@@ -165,7 +165,7 @@ internal static class LocalHelpers
     /// <returns>
     /// An <see cref="LocalGroup"/> object for a group with the specified name.
     /// </returns>
-    internal static LocalGroup GetMatchingLocalGroupsByName(string name, PrincipalContext principalContext)
+    internal static LocalGroup? GetMatchingLocalGroupsByName(string name, PrincipalContext principalContext)
         => GetMatchingLocalGroups(userPrincipal => name.Equals(userPrincipal.Name, StringComparison.CurrentCultureIgnoreCase), principalContext).FirstOrDefault();
 
     /// <summary>
@@ -180,7 +180,7 @@ internal static class LocalHelpers
     /// <returns>
     /// An <see cref="LocalGroup"/> object for a group with the specified security identifier (SID).
     /// </returns>
-    internal static LocalGroup GetMatchingLocalGroupsBySID(SecurityIdentifier sid, PrincipalContext principalContext)
+    internal static LocalGroup? GetMatchingLocalGroupsBySID(SecurityIdentifier sid, PrincipalContext principalContext)
         => GetMatchingLocalGroups(userPrincipal => sid.Equals(userPrincipal.Sid), principalContext).FirstOrDefault();
 
     /// <summary>
@@ -239,7 +239,7 @@ internal static class LocalHelpers
     /// <returns>
     /// An <see cref="GroupPrincipal"/> object for a group with the specified name.
     /// </returns>
-    internal static GroupPrincipal GetMatchingGroupPrincipalsByName(string name, PrincipalContext principalContext)
+    internal static GroupPrincipal? GetMatchingGroupPrincipalsByName(string name, PrincipalContext principalContext)
         => GetMatchingGroupPrincipals(userPrincipal => name.Equals(userPrincipal.Name, StringComparison.CurrentCultureIgnoreCase), principalContext).FirstOrDefault();
 
     /// <summary>
@@ -254,7 +254,7 @@ internal static class LocalHelpers
     /// <returns>
     /// An <see cref="GroupPrincipal"/> object for a group with the specified security identifier (SID).
     /// </returns>
-    internal static GroupPrincipal GetMatchingGroupPrincipalsBySID(SecurityIdentifier sid, PrincipalContext principalContext)
+    internal static GroupPrincipal? GetMatchingGroupPrincipalsBySID(SecurityIdentifier sid, PrincipalContext principalContext)
         => GetMatchingGroupPrincipals(userPrincipal => sid.Equals(userPrincipal.Sid), principalContext).FirstOrDefault();
 
     /// <summary>
@@ -350,7 +350,7 @@ internal static class LocalHelpers
                 do
                 {
                     hasItem = false;
-                    LocalPrincipal localGroup = null;
+                    LocalPrincipal? localGroup = null;
 
                     try
                     {

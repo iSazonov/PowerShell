@@ -31,7 +31,7 @@ namespace Microsoft.PowerShell.Commands
         /// the TargetObject member of a PowerShell
         /// <see cref="System.Management.Automation.ErrorRecord"/> object.
         /// </summary>
-        public object Target
+        public object? Target
         {
             get;
             private set;
@@ -57,7 +57,7 @@ namespace Microsoft.PowerShell.Commands
         }
         #endregion Public Properties
 
-        internal LocalAccountsException(string message, object target, ErrorCategory errorCategory)
+        internal LocalAccountsException(string? message, object? target, ErrorCategory errorCategory)
             : base(message)
         {
             ErrorCategory = errorCategory;
@@ -72,13 +72,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public LocalAccountsException(string message) : base(message) { }
+        public LocalAccountsException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public LocalAccountsException(string message, Exception ex) : base(message, ex) { }
+        public LocalAccountsException(string? message, Exception? ex) : base(message, ex) { }
 
         /// <summary>
         /// Compliance Constructor.
@@ -106,8 +106,8 @@ namespace Microsoft.PowerShell.Commands
         #endregion Public Properties
 
         internal InternalException(UInt32 ntStatus,
-                                   string message,
-                                   object target,
+                                   string? message,
+                                   object? target,
                                    ErrorCategory errorCategory = ErrorCategory.NotSpecified)
             : base(message, target, errorCategory)
         {
@@ -115,7 +115,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         internal InternalException(UInt32 ntStatus,
-                                   object target,
+                                   object? target,
                                    ErrorCategory errorCategory = ErrorCategory.NotSpecified)
             : this(ntStatus,
                    StringUtil.Format(Strings.UnspecifiedErrorNtStatus, ntStatus),
@@ -132,13 +132,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public InternalException(string message) : base(message) { }
+        public InternalException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public InternalException(string message, Exception ex) : base(message, ex) { }
+        public InternalException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -166,8 +166,8 @@ namespace Microsoft.PowerShell.Commands
         #endregion Public Properties
 
         internal Win32InternalException(int errorCode,
-                                        string message,
-                                        object target,
+                                        string? message,
+                                        object? target,
                                         ErrorCategory errorCategory = ErrorCategory.NotSpecified)
             : base(message, target, errorCategory)
         {
@@ -175,7 +175,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         internal Win32InternalException(int errorCode,
-                                        object target,
+                                        object? target,
                                         ErrorCategory errorCategory = ErrorCategory.NotSpecified)
             : this(errorCode,
                    StringUtil.Format(Strings.UnspecifiedErrorWin32Error, errorCode),
@@ -192,13 +192,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public Win32InternalException(string message) : base(message) { }
+        public Win32InternalException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public Win32InternalException(string message, Exception ex) : base(message, ex) { }
+        public Win32InternalException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -224,7 +224,7 @@ namespace Microsoft.PowerShell.Commands
         /// Generates the exception with the specified message.
         /// </summary>
         /// <param name="message"></param>
-        public InvalidPasswordException(string message)
+        public InvalidPasswordException(string? message)
             : base(message, null, ErrorCategory.InvalidArgument)
         {
         }
@@ -234,7 +234,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public InvalidPasswordException(string message, Exception ex) : base(message, ex) { }
+        public InvalidPasswordException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -252,7 +252,7 @@ namespace Microsoft.PowerShell.Commands
         /// Creates InvalidParametersException using the specified message.
         /// </summary>
         /// <param name="message"></param>
-        public InvalidParametersException(string message)
+        public InvalidParametersException(string? message)
             : base(message, null, ErrorCategory.InvalidArgument)
         {
         }
@@ -271,7 +271,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public InvalidParametersException(string message, Exception ex) : base(message, ex) { }
+        public InvalidParametersException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -285,7 +285,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class AccessDeniedException : LocalAccountsException
     {
-        internal AccessDeniedException(object target)
+        internal AccessDeniedException(object? target)
             : base(Strings.AccessDenied, target, ErrorCategory.PermissionDenied)
         {
         }
@@ -298,13 +298,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public AccessDeniedException(string message) : base(message) { }
+        public AccessDeniedException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public AccessDeniedException(string message, Exception ex) : base(message, ex) { }
+        public AccessDeniedException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -318,7 +318,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class InvalidNameException : LocalAccountsException
     {
-        internal InvalidNameException(string name, object target)
+        internal InvalidNameException(string name, object? target)
             : base(StringUtil.Format(Strings.InvalidName, name), target, ErrorCategory.InvalidArgument)
         {
         }
@@ -331,13 +331,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public InvalidNameException(string message) : base(message) { }
+        public InvalidNameException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public InvalidNameException(string message, Exception ex) : base(message, ex) { }
+        public InvalidNameException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -351,7 +351,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class NameInUseException : LocalAccountsException
     {
-        internal NameInUseException(string name, object target)
+        internal NameInUseException(string name, object? target)
             : base(StringUtil.Format(Strings.NameInUse, name), target, ErrorCategory.InvalidArgument)
         {
         }
@@ -364,13 +364,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public NameInUseException(string message) : base(message) { }
+        public NameInUseException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public NameInUseException(string message, Exception ex) : base(message, ex) { }
+        public NameInUseException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -385,7 +385,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class NotFoundException : LocalAccountsException
     {
-        internal NotFoundException(string message, object target)
+        internal NotFoundException(string? message, object? target)
           : base(message, target, ErrorCategory.ObjectNotFound)
         {
         }
@@ -398,13 +398,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public NotFoundException(string message) : base(message) { }
+        public NotFoundException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public NotFoundException(string message, Exception ex) : base(message, ex) { }
+        public NotFoundException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -418,7 +418,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class PrincipalNotFoundException : NotFoundException
     {
-        internal PrincipalNotFoundException(string principal, object target)
+        internal PrincipalNotFoundException(string principal, object? target)
             : base(StringUtil.Format(Strings.PrincipalNotFound, principal), target)
         {
         }
@@ -431,13 +431,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public PrincipalNotFoundException(string message) : base(message) { }
+        public PrincipalNotFoundException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public PrincipalNotFoundException(string message, Exception ex) : base(message, ex) { }
+        public PrincipalNotFoundException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -451,7 +451,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class GroupNotFoundException : NotFoundException
     {
-        internal GroupNotFoundException(string group, object target)
+        internal GroupNotFoundException(string group, object? target)
             : base(StringUtil.Format(Strings.GroupNotFound, group), target)
         {
         }
@@ -464,13 +464,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public GroupNotFoundException(string message) : base(message) { }
+        public GroupNotFoundException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public GroupNotFoundException(string message, Exception ex) : base(message, ex) { }
+        public GroupNotFoundException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -484,7 +484,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class UserNotFoundException : NotFoundException
     {
-        internal UserNotFoundException(string user, object target)
+        internal UserNotFoundException(string user, object? target)
             : base(StringUtil.Format(Strings.UserNotFound, user), target)
         {
         }
@@ -497,13 +497,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public UserNotFoundException(string message) : base(message) { }
+        public UserNotFoundException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public UserNotFoundException(string message, Exception ex) : base(message, ex) { }
+        public UserNotFoundException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -530,13 +530,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public MemberNotFoundException(string message) : base(message) { }
+        public MemberNotFoundException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public MemberNotFoundException(string message, Exception ex) : base(message, ex) { }
+        public MemberNotFoundException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -551,7 +551,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class ObjectExistsException : LocalAccountsException
     {
-        internal ObjectExistsException(string message, object target)
+        internal ObjectExistsException(string? message, object? target)
             : base(message, target, ErrorCategory.ResourceExists)
         {
         }
@@ -564,13 +564,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public ObjectExistsException(string message) : base(message) { }
+        public ObjectExistsException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public ObjectExistsException(string message, Exception ex) : base(message, ex) { }
+        public ObjectExistsException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -584,7 +584,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class GroupExistsException : ObjectExistsException
     {
-        internal GroupExistsException(string group, object target)
+        internal GroupExistsException(string group, object? target)
             : base(StringUtil.Format(Strings.GroupExists, group), target)
         {
         }
@@ -597,13 +597,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public GroupExistsException(string message) : base(message) { }
+        public GroupExistsException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public GroupExistsException(string message, Exception ex) : base(message, ex) { }
+        public GroupExistsException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -617,7 +617,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class UserExistsException : ObjectExistsException
     {
-        internal UserExistsException(string user, object target)
+        internal UserExistsException(string user, object? target)
             : base(StringUtil.Format(Strings.UserExists, user), target)
         {
         }
@@ -630,13 +630,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public UserExistsException(string message) : base(message) { }
+        public UserExistsException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public UserExistsException(string message, Exception ex) : base(message, ex) { }
+        public UserExistsException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
@@ -650,7 +650,7 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class MemberExistsException : ObjectExistsException
     {
-        internal MemberExistsException(string member, string group, object target)
+        internal MemberExistsException(string member, string group, object? target)
             : base(StringUtil.Format(Strings.MemberExists, member, group), target)
         {
         }
@@ -663,13 +663,13 @@ namespace Microsoft.PowerShell.Commands
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
-        public MemberExistsException(string message) : base(message) { }
+        public MemberExistsException(string? message) : base(message) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="ex"></param>
-        public MemberExistsException(string message, Exception ex) : base(message, ex) { }
+        public MemberExistsException(string? message, Exception? ex) : base(message, ex) { }
         /// <summary>
         /// Compliance Constructor.
         /// </summary>

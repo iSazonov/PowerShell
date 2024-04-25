@@ -38,7 +38,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "InputObject")]
         [ValidateNotNullOrEmpty]
-        public LocalGroup[] InputObject { get; set; }
+        public LocalGroup[] InputObject { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -51,7 +51,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        public string[] Name { get; set; }
+        public string[] Name { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -64,7 +64,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNullOrEmpty]
-        public SecurityIdentifier[] SID { get; set; }
+        public SecurityIdentifier[] SID { get; set; } = null!;
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -184,7 +184,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 foreach (LocalGroup group in InputObject)
                 {
-                    if (CheckShouldProcess(group.Name ?? group.SID?.Value))
+                    if (CheckShouldProcess(group.ToString()))
                     {
                         try
                         {
@@ -193,7 +193,7 @@ namespace Microsoft.PowerShell.Commands
                                 : GroupPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, group.Name);
                             if (groupPrincipal is null)
                             {
-                                WriteError(new ErrorRecord(new GroupNotFoundException(group.Name ?? group.SID.Value, group), "GroupNotFound", ErrorCategory.ObjectNotFound, group));
+                                WriteError(new ErrorRecord(new GroupNotFoundException(group.ToString()), "GroupNotFound", ErrorCategory.ObjectNotFound, group));
                             }
                             else
                             {

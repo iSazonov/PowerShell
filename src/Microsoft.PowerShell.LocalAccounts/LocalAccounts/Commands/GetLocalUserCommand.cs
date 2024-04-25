@@ -37,7 +37,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNull]
-        public string[] Name { get; set; }
+        public string[] Name { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -48,7 +48,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNull]
-        public SecurityIdentifier[] SID { get; set; }
+        public SecurityIdentifier[] SID { get; set; } = null!;
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -57,7 +57,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (Name == null && SID == null)
+            if (Name is null && SID is null)
             {
                 try
                 {
@@ -90,7 +90,7 @@ namespace Microsoft.PowerShell.Commands
         /// </remarks>
         private void ProcessNames()
         {
-            if (Name != null)
+            if (Name is not null)
             {
                 foreach (string name in Name)
                 {
@@ -122,7 +122,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private void ProcessSids()
         {
-            if (SID != null)
+            if (SID is not null)
             {
                 foreach (SecurityIdentifier sid in SID)
                 {

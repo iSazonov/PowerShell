@@ -40,7 +40,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "InputObject")]
         [ValidateNotNullOrEmpty]
-        public LocalGroup InputObject { get; set; }
+        public LocalGroup InputObject { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -53,7 +53,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "NewName".
@@ -63,7 +63,7 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(Mandatory = true,
                    Position = 1)]
         [ValidateNotNullOrEmpty]
-        public string NewName { get; set; }
+        public string NewName { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -75,7 +75,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNullOrEmpty]
-        public SecurityIdentifier SID { get; set; }
+        public SecurityIdentifier SID { get; set; } = null!;
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -192,7 +192,7 @@ namespace Microsoft.PowerShell.Commands
             if (InputObject != null)
             {
                 LocalGroup group = InputObject;
-                if (CheckShouldProcess(group.Name ?? group.SID?.Value, NewName))
+                if (CheckShouldProcess(group.ToString(), NewName))
                 {
                     try
                     {
@@ -201,7 +201,7 @@ namespace Microsoft.PowerShell.Commands
                             : GroupPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, group.Name);
                         if (groupPrincipal is null)
                         {
-                            WriteError(new ErrorRecord(new GroupNotFoundException(group.Name ?? group.SID.Value, group), "GroupNotFound", ErrorCategory.ObjectNotFound, group));
+                            WriteError(new ErrorRecord(new GroupNotFoundException(group.ToString(), group), "GroupNotFound", ErrorCategory.ObjectNotFound, group));
                         }
                         else
                         {
@@ -241,7 +241,7 @@ namespace Microsoft.PowerShell.Commands
         /// <returns>
         /// True if the group should be processed, false otherwise.
         /// </returns>
-        private bool CheckShouldProcess(string groupName, string newName)
+        private bool CheckShouldProcess(string? groupName, string newName)
         {
             string msg = StringUtil.Format(Strings.ActionRenameGroup, newName);
 

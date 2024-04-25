@@ -46,7 +46,9 @@ namespace System.Management.Automation.SecurityAccountsManager
             {
                 UInt32 status = Native.Win32.LsaLookupUserAccountType(bSid, out type);
                 if (NtStatus.IsError(status))
+                {
                     type = LSA_USER_ACCOUNT_TYPE.UnknownUserAccountType;
+                }
 
                 switch (type)
                 {

@@ -37,7 +37,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Group")]
         [ValidateNotNull]
-        public LocalGroup Group { get; set; }
+        public LocalGroup Group { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Member".
@@ -47,7 +47,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty]
-        public string Member { get; set; }
+        public string Member { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -59,7 +59,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -71,7 +71,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNullOrEmpty]
-        public SecurityIdentifier SID { get; set; }
+        public SecurityIdentifier SID { get; set; } = null!;
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -82,22 +82,22 @@ namespace Microsoft.PowerShell.Commands
         {
             try
             {
-                IEnumerable<LocalPrincipal> principals = null;
+                IEnumerable<LocalPrincipal>? principals = null;
 
-                if (Group != null)
+                if (Group is not null)
                 {
                     principals = ProcessGroup(Group);
                 }
-                else if (Name != null)
+                else if (Name is not null)
                 {
                     principals = ProcessName(Name);
                 }
-                else if (SID != null)
+                else if (SID is not null)
                 {
                     principals = ProcessSid(SID);
                 }
 
-                if (principals != null)
+                if (principals is not null)
                 {
                     WriteObject(principals, enumerateCollection: true);
                 }
@@ -137,7 +137,7 @@ namespace Microsoft.PowerShell.Commands
                 }
                 else
                 {
-                    SecurityIdentifier sid = this.TrySid(Member);
+                    SecurityIdentifier? sid = this.TrySid(Member);
 
                     if (sid is not null)
                     {
@@ -154,7 +154,7 @@ namespace Microsoft.PowerShell.Commands
                     {
                         foreach (LocalPrincipal m in membership)
                         {
-                            if (m.Name.Equals(Member, StringComparison.CurrentCultureIgnoreCase))
+                            if (Member.Equals(m.Name, StringComparison.CurrentCultureIgnoreCase))
                             {
                                 rv.Add(m);
                                 break;
@@ -178,6 +178,9 @@ namespace Microsoft.PowerShell.Commands
 
         private IEnumerable<LocalPrincipal> ProcessGroup(LocalGroup group)
         {
+            _groupPrincipal = Group.SID is not null
+                ? GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.Sid, Group.SID.Value)
+                : GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.SamAccountName, Group.Name);
             return ProcessesMembership(LocalHelpers.GetMatchingLocalGroupMemebersBySID(group.SID, _principalContext));
         }
 

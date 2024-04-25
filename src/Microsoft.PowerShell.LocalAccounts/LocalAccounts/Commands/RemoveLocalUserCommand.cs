@@ -39,7 +39,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "InputObject")]
         [ValidateNotNullOrEmpty]
-        public LocalUser[] InputObject { get; set; }
+        public LocalUser[] InputObject { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -52,7 +52,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        public string[] Name { get; set; }
+        public string[] Name { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -65,7 +65,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNullOrEmpty]
-        public SecurityIdentifier[] SID { get; set; }
+        public SecurityIdentifier[] SID { get; set; } = null!;
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -185,7 +185,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 foreach (LocalUser user in InputObject)
                 {
-                    if (CheckShouldProcess(user.Name ?? user.SID?.Value))
+                    if (CheckShouldProcess(user.ToString()))
                     {
                         try
                         {
@@ -194,7 +194,7 @@ namespace Microsoft.PowerShell.Commands
                                 : UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, user.Name);
                             if (userPrincipal is null)
                             {
-                                WriteError(new ErrorRecord(new UserNotFoundException(user.Name ?? user.SID.Value, user), "GroupNotFound", ErrorCategory.ObjectNotFound, user));
+                                WriteError(new ErrorRecord(new UserNotFoundException(user.ToString(), user), "GroupNotFound", ErrorCategory.ObjectNotFound, user));
                             }
                             else
                             {
@@ -219,7 +219,7 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-        private bool CheckShouldProcess(string target)
+        private bool CheckShouldProcess(string? target)
         {
             return ShouldProcess(target, Strings.ActionRemoveUser);
         }

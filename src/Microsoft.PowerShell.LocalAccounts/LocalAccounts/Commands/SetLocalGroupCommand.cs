@@ -34,7 +34,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public string Description { get; set; }
+        public string Description { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "InputObject".
@@ -47,7 +47,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "InputObject")]
         [ValidateNotNull]
-        public LocalGroup InputObject { get; set; }
+        public LocalGroup InputObject { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -60,7 +60,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNull]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -72,7 +72,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNull]
-        public SecurityIdentifier SID { get; set; }
+        public SecurityIdentifier SID { get; set; } = null!;
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -81,7 +81,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            GroupPrincipal groupPrincipal = null;
+            GroupPrincipal? groupPrincipal = null;
             try
             {
                 LocalGroup group = InputObject;
@@ -136,16 +136,16 @@ namespace Microsoft.PowerShell.Commands
         #endregion Cmdlet Overrides
 
         #region Private Methods
-        private static LocalGroup GetTargetGroupObject(GroupPrincipal group)
-            => new LocalGroup()
-            {
-                Description = group.Description,
-                Name = group.Name,
-                PrincipalSource = Sam.GetPrincipalSource(group.Sid),
-                SID = group.Sid,
-            };
+        private static LocalGroup? GetTargetGroupObject(GroupPrincipal? group)
+            => group is null ? null : new LocalGroup()
+                                        {
+                                            Description = group.Description,
+                                            Name = group.Name,
+                                            PrincipalSource = Sam.GetPrincipalSource(group.Sid),
+                                            SID = group.Sid,
+                                        };
 
-        private bool CheckShouldProcess(string target)
+        private bool CheckShouldProcess(string? target)
         {
             return ShouldProcess(target, Strings.ActionSetGroup);
         }

@@ -23,7 +23,7 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// A short description of the User.
         /// </summary>
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         /// <summary>
         /// Indicates whether the user account is enabled (true) or disabled (false).
@@ -33,7 +33,7 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// The user's full name. Not the same as the User name.
         /// </summary>
-        public string FullName { get; set; }
+        public string? FullName { get; set; }
 
         /// <summary>
         /// The date and time at which this user account password is allowed
@@ -84,7 +84,7 @@ namespace Microsoft.PowerShell.Commands
         /// Initializes a new LocalUser object with the specified name.
         /// </summary>
         /// <param name="name">Name of the new LocalUser.</param>
-        public LocalUser(string name)
+        public LocalUser(string? name)
           : base(name)
         {
             ObjectClass = Strings.ObjectClassUser;
@@ -124,7 +124,7 @@ namespace Microsoft.PowerShell.Commands
         /// </returns>
         public override string ToString()
         {
-            return Name ?? SID.ToString();
+            return Name ?? SID?.ToString() ?? string.Empty;
         }
 
         /// <summary>

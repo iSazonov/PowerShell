@@ -46,12 +46,12 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// The account name of the Principal.
         /// </summary>
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// The Security Identifier that uniquely identifies the Principal/
         /// </summary>
-        public SecurityIdentifier SID { get; set; }
+        public SecurityIdentifier? SID { get; set; }
 
         /// <summary>
         /// Indicates the account store from which the principal is sourced.
@@ -63,7 +63,7 @@ namespace Microsoft.PowerShell.Commands
         /// The object class that represents this principal.
         /// This can be User or Group.
         /// </summary>
-        public string ObjectClass { get; set; }
+        public string? ObjectClass { get; set; }
         #endregion Public Properties
 
         #region Construction
@@ -78,7 +78,7 @@ namespace Microsoft.PowerShell.Commands
         /// Initializes a new LocalPrincipal object with the specified name.
         /// </summary>
         /// <param name="name">Name of the new LocalPrincipal.</param>
-        public LocalPrincipal(string name)
+        public LocalPrincipal(string? name)
         {
             Name = name;
         }
@@ -93,7 +93,7 @@ namespace Microsoft.PowerShell.Commands
         /// </returns>
         public override string ToString()
         {
-            return Name ?? SID.ToString();
+            return Name ?? SID?.ToString() ?? string.Empty;
         }
         #endregion Public Methods
     }

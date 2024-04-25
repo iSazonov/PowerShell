@@ -17,7 +17,7 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// A short description of the Group.
         /// </summary>
-        public string Description { get; set; }
+        public string? Description { get; set; }
         #endregion Public Properties
 
         #region Construction
@@ -33,7 +33,7 @@ namespace Microsoft.PowerShell.Commands
         /// Initializes a new LocalUser object with the specified name.
         /// </summary>
         /// <param name="name">Name of the new LocalGroup.</param>
-        public LocalGroup(string name)
+        public LocalGroup(string? name)
           : base(name)
         {
             ObjectClass = Strings.ObjectClassGroup;
@@ -59,7 +59,7 @@ namespace Microsoft.PowerShell.Commands
         /// </returns>
         public override string ToString()
         {
-            return Name ?? SID.ToString();
+            return Name ?? SID?.ToString() ?? string.Empty;
         }
 
         /// <summary>

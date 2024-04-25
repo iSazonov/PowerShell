@@ -40,7 +40,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "InputObject")]
         [ValidateNotNull]
-        public LocalUser InputObject { get; set; }
+        public LocalUser InputObject { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -53,7 +53,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "NewName".
@@ -63,7 +63,7 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(Mandatory = true,
                    Position = 1)]
         [ValidateNotNullOrEmpty]
-        public string NewName { get; set; }
+        public string NewName { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -75,7 +75,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNull]
-        public SecurityIdentifier SID { get; set; }
+        public SecurityIdentifier SID { get; set; } = null!;
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -192,7 +192,7 @@ namespace Microsoft.PowerShell.Commands
             if (InputObject != null)
             {
                 LocalUser user = InputObject;
-                if (CheckShouldProcess(user.Name ?? user.SID?.Value, NewName))
+                if (CheckShouldProcess(user.ToString(), NewName))
                 {
                     try
                     {
@@ -201,7 +201,7 @@ namespace Microsoft.PowerShell.Commands
                             : UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, user.Name);
                         if (userPrincipal is null)
                         {
-                            WriteError(new ErrorRecord(new UserNotFoundException(user.Name ?? user.SID.Value, user), "UserNotFound", ErrorCategory.ObjectNotFound, user));
+                            WriteError(new ErrorRecord(new UserNotFoundException(user.ToString(), user), "UserNotFound", ErrorCategory.ObjectNotFound, user));
                         }
                         else
                         {
@@ -241,7 +241,7 @@ namespace Microsoft.PowerShell.Commands
         /// <returns>
         /// True if the user should be processed, false otherwise.
         /// </returns>
-        private bool CheckShouldProcess(string userName, string newName)
+        private bool CheckShouldProcess(string? userName, string newName)
         {
             string msg = StringUtil.Format(Strings.ActionRenameUser, newName);
 

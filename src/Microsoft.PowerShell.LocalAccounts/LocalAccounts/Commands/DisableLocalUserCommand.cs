@@ -41,7 +41,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "InputObject")]
         [ValidateNotNullOrEmpty]
-        public LocalUser[] InputObject { get; set; }
+        public LocalUser[] InputObject { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -54,7 +54,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        public string[] Name { get; set; }
+        public string[] Name { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -67,7 +67,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNullOrEmpty]
-        public SecurityIdentifier[] SID { get; set; }
+        public SecurityIdentifier[] SID { get; set; } = null!;
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -177,6 +177,11 @@ namespace Microsoft.PowerShell.Commands
             {
                 foreach (LocalUser user in InputObject)
                 {
+                    if (user is null)
+                    {
+                        continue;
+                    }
+
                     try
                     {
                         if (CheckShouldProcess(user.Name))
@@ -197,7 +202,7 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-        private bool CheckShouldProcess(string target)
+        private bool CheckShouldProcess(string? target)
         {
             return ShouldProcess(target, Strings.ActionDisableUser);
         }

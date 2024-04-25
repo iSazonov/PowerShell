@@ -63,7 +63,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
         [ValidateNotNull]
-        public string Description { get; set; }
+        public string Description { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Disabled".
@@ -79,7 +79,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
         [ValidateNotNull]
-        public string FullName { get; set; }
+        public string FullName { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -92,7 +92,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true)]
         [ValidateNotNullOrEmpty]
         [ValidateLength(1, 20)]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Password".
@@ -103,7 +103,7 @@ namespace Microsoft.PowerShell.Commands
                    ParameterSetName = "Password",
                    ValueFromPipelineByPropertyName = true)]
         [ValidateNotNull]
-        public System.Security.SecureString Password { get; set; }
+        public System.Security.SecureString Password { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "PasswordChangeableDate".

@@ -27,10 +27,15 @@ namespace System.Management.Automation.SecurityAccountsManager.Extensions
         /// A <see cref="SecurityIdentifier"/> object if the conversion was successful,
         /// null otherwise.
         /// </returns>
-        internal static SecurityIdentifier TrySid(this Cmdlet cmdlet,
-                                                  string s,
+        internal static SecurityIdentifier? TrySid(this Cmdlet cmdlet,
+                                                  string? s,
                                                   bool allowSidConstants = false)
         {
+            if (s is null)
+            {
+                return null;
+            }
+
             if (!allowSidConstants)
             {
                 if (!(s.Length > 2 && s.StartsWith("S-", StringComparison.Ordinal) && char.IsDigit(s[2])))
@@ -39,7 +44,7 @@ namespace System.Management.Automation.SecurityAccountsManager.Extensions
                 }
             }
 
-            SecurityIdentifier sid = null;
+            SecurityIdentifier? sid = null;
 
             try
             {
@@ -163,15 +168,15 @@ namespace System.Management.Automation.SecurityAccountsManager.Extensions
         /// <returns>
         /// A string containing the SecureString object's original text.
         /// </returns>
-        internal static string AsString(this SecureString str)
+        internal static string? AsString(this SecureString str)
         {
 #if CORECLR
             IntPtr buffer = SecureStringMarshal.SecureStringToCoTaskMemUnicode(str);
-            string clear = Marshal.PtrToStringUni(buffer);
+            string? clear = Marshal.PtrToStringUni(buffer);
             Marshal.ZeroFreeCoTaskMemUnicode(buffer);
 #else
             var bstr = Marshal.SecureStringToBSTR(str);
-            string clear = Marshal.PtrToStringAuto(bstr);
+            string? clear = Marshal.PtrToStringAuto(bstr);
             Marshal.ZeroFreeBSTR(bstr);
 #endif
             return clear;
@@ -183,12 +188,12 @@ namespace System.Management.Automation.SecurityAccountsManager.Extensions
         internal static ErrorRecord MakeErrorRecord(this Exception ex,
                                                     string errorId,
                                                     ErrorCategory errorCategory,
-                                                    object target = null)
+                                                    object? target = null)
         {
             return new ErrorRecord(ex, errorId, errorCategory, target);
         }
 
-        internal static ErrorRecord MakeErrorRecord(this Exception ex, object target = null)
+        internal static ErrorRecord MakeErrorRecord(this Exception ex, object? target = null)
         {
             // This part is somewhat less than beautiful, but it prevents
             // having to have multiple exception handlers in every cmdlet command.
@@ -203,7 +208,7 @@ namespace System.Management.Automation.SecurityAccountsManager.Extensions
                                    target);
         }
 
-        internal static ErrorRecord MakeErrorRecord(this LocalAccountsException ex, object target = null)
+        internal static ErrorRecord MakeErrorRecord(this LocalAccountsException ex, object? target = null)
         {
             return ex.MakeErrorRecord(ex.ErrorName, ex.ErrorCategory, target ?? ex.Target);
         }

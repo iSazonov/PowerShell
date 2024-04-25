@@ -41,7 +41,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "InputObject")]
         [ValidateNotNullOrEmpty]
-        public LocalUser[] InputObject { get; set; }
+        public LocalUser[] InputObject { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -54,7 +54,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        public string[] Name { get; set; }
+        public string[] Name { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -67,7 +67,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipelineByPropertyName = true,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNullOrEmpty]
-        public SecurityIdentifier[] SID { get; set; }
+        public SecurityIdentifier[] SID { get; set; } = null!;
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -99,10 +99,15 @@ namespace Microsoft.PowerShell.Commands
         /// </remarks>
         private void ProcessNames()
         {
-            if (Name != null)
+            if (Name is not null)
             {
                 foreach (string name in Name)
                 {
+                    if (name is null)
+                    {
+                        continue;
+                    }
+
                     try
                     {
                         if (CheckShouldProcess(name))
@@ -143,10 +148,15 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private void ProcessSids()
         {
-            if (SID != null)
+            if (SID is not null)
             {
                 foreach (SecurityIdentifier sid in SID)
                 {
+                    if (sid is null)
+                    {
+                        continue;
+                    }
+
                     try
                     {
                         var sidString = sid.ToString();
@@ -173,13 +183,18 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private void ProcessUsers()
         {
-            if (InputObject != null)
+            if (InputObject is not null)
             {
                 foreach (LocalUser user in InputObject)
                 {
+                    if (user is null)
+                    {
+                        continue;
+                    }
+
                     try
                     {
-                        if (CheckShouldProcess(user.Name))
+                        if (CheckShouldProcess(user.ToString()))
                         {
                             using UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, user.Name);
                             if (userPrincipal is not null)

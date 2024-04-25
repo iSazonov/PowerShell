@@ -27,7 +27,7 @@ namespace Microsoft.PowerShell.Commands
         #region Instance Data
         // Explicitly point a domain name of the computer otherwise a domain name of current user would be used by default.
         private PrincipalContext _principalContext = new PrincipalContext(ContextType.Domain, LocalHelpers.GetComputerDomainName());
-        private GroupPrincipal _groupPrincipal;
+        private GroupPrincipal? _groupPrincipal;
 
         // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
         private PrincipalContext _groupPrincipalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
@@ -42,7 +42,7 @@ namespace Microsoft.PowerShell.Commands
                    Position = 0,
                    ParameterSetName = "Group")]
         [ValidateNotNull]
-        public LocalGroup Group { get; set; }
+        public LocalGroup Group { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Member".
@@ -55,7 +55,7 @@ namespace Microsoft.PowerShell.Commands
                    ValueFromPipeline = true,
                    ValueFromPipelineByPropertyName = true)]
         [ValidateNotNullOrEmpty]
-        public LocalPrincipal[] Member { get; set; }
+        public LocalPrincipal[] Member { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
@@ -65,7 +65,7 @@ namespace Microsoft.PowerShell.Commands
                    Position = 0,
                    ParameterSetName = "Default")]
         [ValidateNotNullOrEmpty]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
@@ -75,7 +75,7 @@ namespace Microsoft.PowerShell.Commands
                    Position = 0,
                    ParameterSetName = "SecurityIdentifier")]
         [ValidateNotNull]
-        public SecurityIdentifier SID { get; set; }
+        public SecurityIdentifier SID { get; set; } = null!;
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
@@ -110,7 +110,7 @@ namespace Microsoft.PowerShell.Commands
             if (_groupPrincipal is null)
             {
                 LocalGroup target = Group ?? new LocalGroup(Name) { SID = SID };
-                ThrowTerminatingError(new ErrorRecord(new GroupNotFoundException(Group.Name, target), "GroupNotFound", ErrorCategory.ObjectNotFound, target));
+                ThrowTerminatingError(new ErrorRecord(new GroupNotFoundException(target.ToString(), target), "GroupNotFound", ErrorCategory.ObjectNotFound, target));
             }
         }
 
@@ -121,9 +121,14 @@ namespace Microsoft.PowerShell.Commands
         {
             foreach (LocalPrincipal member in Member)
             {
+                if (member is null)
+                {
+                    continue;
+                }
+
                 try
                 {
-                    using Principal principal = MakePrincipal(_groupPrincipal.Name, member);
+                    using Principal? principal = MakePrincipal(_groupPrincipal!.Name, member);
                     if (principal is not null)
                     {
                         _groupPrincipal.Members.Remove(principal);
@@ -138,7 +143,7 @@ namespace Microsoft.PowerShell.Commands
                 }
                 catch (PrincipalNotFoundException)
                 {
-                    var exc = new MemberNotFoundException(member.Name, _groupPrincipal.Name);
+                    var exc = new MemberNotFoundException(member.ToString(), _groupPrincipal!.Name);
                     WriteError(new ErrorRecord(exc, "PrincipalNotFound", ErrorCategory.ObjectNotFound, targetObject: GetTargetObject()));
                 }
                 catch (Exception ex)
@@ -151,14 +156,14 @@ namespace Microsoft.PowerShell.Commands
         #endregion Cmdlet Overrides
 
         #region Private Methods
-        private LocalGroup GetTargetObject()
-            => new LocalGroup()
-            {
-                Description = _groupPrincipal.Description,
-                Name = _groupPrincipal.Name,
-                PrincipalSource = Sam.GetPrincipalSource(_groupPrincipal.Sid),
-                SID = _groupPrincipal.Sid,
-            };
+        private LocalGroup? GetTargetObject()
+            => _groupPrincipal is null ? null : new LocalGroup()
+                                                {
+                                                    Description = _groupPrincipal.Description,
+                                                    Name = _groupPrincipal.Name,
+                                                    PrincipalSource = Sam.GetPrincipalSource(_groupPrincipal.Sid),
+                                                    SID = _groupPrincipal.Sid,
+                                                };
 
         /// <summary>
         /// Creates a <see cref="Principal"/> object
@@ -193,7 +198,7 @@ namespace Microsoft.PowerShell.Commands
         /// that object will not be included in the returned List.
         /// </para>
         /// </remarks>
-        private Principal MakePrincipal(string groupId, LocalPrincipal member)
+        private Principal? MakePrincipal(string groupId, LocalPrincipal member)
         {
             Principal principal;
 
@@ -205,7 +210,7 @@ namespace Microsoft.PowerShell.Commands
             else
             {
                 // Otherwise it must have been constructed by name.
-                SecurityIdentifier sid = this.TrySid(member.Name);
+                SecurityIdentifier? sid = this.TrySid(member.Name);
 
                 if (sid is not null)
                 {
@@ -221,7 +226,7 @@ namespace Microsoft.PowerShell.Commands
             if (principal is null)
             {
                 // It is a breaking change. AccountManagement API can not add a member by a fake SID, Windows PowerShell can do.
-                WriteError(new ErrorRecord(new PrincipalNotFoundException(member.Name ?? member.SID.Value, member), "PrincipalNotFound", ErrorCategory.ObjectNotFound, member));
+                WriteError(new ErrorRecord(new PrincipalNotFoundException(member.ToString(), member), "PrincipalNotFound", ErrorCategory.ObjectNotFound, member));
 
                 return null;
             }
@@ -278,8 +283,8 @@ namespace Microsoft.PowerShell.Commands
             {
                 if (disposing)
                 {
-                    _groupPrincipal.Dispose();
-                    _groupPrincipalContext.Dispose();
+                    _groupPrincipal?.Dispose();
+                    _groupPrincipalContext?.Dispose();
                     _principalContext?.Dispose();
                 }
 
