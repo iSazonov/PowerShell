@@ -76,16 +76,9 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            try
-            {
-                ProcessUsers();
-                ProcessNames();
-                ProcessSids();
-            }
-            catch (Exception ex)
-            {
-                WriteError(ex.MakeErrorRecord());
-            }
+            ProcessUsers();
+            ProcessNames();
+            ProcessSids();
         }
         #endregion Cmdlet Overrides
 
@@ -132,7 +125,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                     catch (Exception ex)
                     {
-                        WriteError(new ErrorRecord(ex, "InvalidAddOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(name)));
+                        WriteError(new ErrorRecord(ex, "InvalidOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(name)));
                     }
                 }
             }
@@ -160,9 +153,15 @@ namespace Microsoft.PowerShell.Commands
                             }
                         }
                     }
+                    catch (UnauthorizedAccessException)
+                    {
+                        var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                        ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: new LocalUser() { SID = sid }));
+                    }
                     catch (Exception ex)
                     {
-                        WriteError(ex.MakeErrorRecord());
+                        WriteError(new ErrorRecord(ex, "InvalidOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = sid }));
                     }
                 }
             }
@@ -194,9 +193,15 @@ namespace Microsoft.PowerShell.Commands
                             }
                         }
                     }
+                    catch (UnauthorizedAccessException)
+                    {
+                        var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                        ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: user));
+                    }
                     catch (Exception ex)
                     {
-                        WriteError(ex.MakeErrorRecord());
+                        WriteError(new ErrorRecord(ex, "InvalidOperation", ErrorCategory.InvalidOperation, targetObject: user));
                     }
                 }
             }
