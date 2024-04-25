@@ -9,6 +9,8 @@ using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
 using System.Security.Principal;
+
+using Microsoft.PowerShell.LocalAccounts;
 #endregion
 
 namespace Microsoft.PowerShell.Commands
@@ -23,7 +25,12 @@ namespace Microsoft.PowerShell.Commands
     public class GetLocalGroupMemberCommand : Cmdlet, IDisposable
     {
         #region Instance Data
-        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
+        // Explicitly point a domain name of the computer otherwise a domain name of current user would be used by default.
+        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Domain, LocalHelpers.GetComputerDomainName());
+        private GroupPrincipal? _groupPrincipal;
+
+        // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
+        private PrincipalContext _groupPrincipalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties
@@ -76,26 +83,48 @@ namespace Microsoft.PowerShell.Commands
 
         #region Cmdlet Overrides
         /// <summary>
+        /// BeginProcessing method.
+        /// </summary>
+        protected override void BeginProcessing()
+        {
+            try
+            {
+                if (Group is not null)
+                {
+                    _groupPrincipal = Group.SID is not null
+                        ? GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.Sid, Group.SID.Value)
+                        : GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.SamAccountName, Group.Name);
+                }
+                else if (Name is not null)
+                {
+                    _groupPrincipal = GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.SamAccountName, Name);
+
+                }
+                else if (SID is not null)
+                {
+                    _groupPrincipal = GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.Sid, SID.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                ThrowTerminatingError(new ErrorRecord(ex, "GroupNotFound", ErrorCategory.ObjectNotFound, Group ?? new LocalGroup(Name) { SID = SID }));
+            }
+
+            if (_groupPrincipal is null)
+            {
+                LocalGroup target = Group ?? new LocalGroup(Name) { SID = SID };
+                ThrowTerminatingError(new ErrorRecord(new GroupNotFoundException(target.ToString(), target), "GroupNotFound", ErrorCategory.ObjectNotFound, target));
+            }
+        }
+
+        /// <summary>
         /// ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
         {
             try
             {
-                IEnumerable<LocalPrincipal>? principals = null;
-
-                if (Group is not null)
-                {
-                    principals = ProcessGroup(Group);
-                }
-                else if (Name is not null)
-                {
-                    principals = ProcessName(Name);
-                }
-                else if (SID is not null)
-                {
-                    principals = ProcessSid(SID);
-                }
+                IEnumerable<LocalPrincipal>? principals = ProcessesMembership(MakeLocalPrincipals(_groupPrincipal!));
 
                 if (principals is not null)
                 {
@@ -104,12 +133,83 @@ namespace Microsoft.PowerShell.Commands
             }
             catch (Exception ex)
             {
-                WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: null));
+                WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupMemberOperation", ErrorCategory.InvalidOperation, targetObject: null));
             }
         }
         #endregion Cmdlet Overrides
 
         #region Private Methods
+        private static IEnumerable<LocalPrincipal> MakeLocalPrincipals(GroupPrincipal groupPrincipal)
+        {
+            static string GetObjectClass(Principal p) => p switch
+            {
+                GroupPrincipal => Strings.ObjectClassGroup,
+                UserPrincipal => Strings.ObjectClassUser,
+                _ => Strings.ObjectClassOther
+            };
+
+            IEnumerator<Principal> members = groupPrincipal.GetMembers().GetEnumerator();
+            bool hasItem = false;
+            do
+            {
+                hasItem = false;
+                LocalPrincipal? localPrincipal = null;
+
+                try
+                {
+                    // Try to move on to next member.
+                    // `GroupPrincipal.GetMembers()` and `GroupPrincipal.Members` throw if an group member account was removed.
+                    // It is a reason why we don't use `foreach (Principal principal in group.GetMembers()) { ... }`
+                    // and we are forced to deconstruct the foreach in order to silently ignore such error and continue.
+                    hasItem = members.MoveNext();
+
+                    if (hasItem)
+                    {
+                        Principal principal = members.Current;
+                        localPrincipal = new LocalPrincipal()
+                        {
+                            // Get name as 'Domain\user'
+                            Name = principal.Sid.Translate(typeof(NTAccount)).ToString(),
+                            PrincipalSource = Sam.GetPrincipalSource(principal.Sid),
+                            SID = principal.Sid,
+                            ObjectClass = GetObjectClass(principal),
+                        };
+
+                        /*
+                        // Follow code is more useful but
+                        //    1. it is a breaking change (output UserPrincipal and GoupPrincipal types instead of LocalPrincipal type)
+                        //    2. it breaks a table output.
+                        if (principal is GroupPrincipal)
+                        {
+                            localPrincipal = new LocalPrincipal()
+                            {
+                                Name = principal.Name,
+                                PrincipalSource = Sam.GetPrincipalSource(principal.Sid),
+                                SID = principal.Sid,
+                                ObjectClass = GetObjectClass(principal),
+                            };
+                        }
+                        else if (principal is UserPrincipal userPrincipal)
+                        {
+                           localPrincipal = GetLocalUser(userPrincipal);
+                        }
+                        */
+                    }
+                }
+                catch (PrincipalOperationException)
+                {
+                    // An error (1332) occurred while enumerating the group membership.  The member's SID could not be resolved.
+                    hasItem = true;
+                }
+
+                if (localPrincipal is not null)
+                {
+                    // `yield` can not be in try with catch block.
+                    yield return localPrincipal;
+                }
+            } while (hasItem);
+        }
+
         private IEnumerable<LocalPrincipal> ProcessesMembership(IEnumerable<LocalPrincipal> membership)
         {
             List<LocalPrincipal> rv;
@@ -175,24 +275,6 @@ namespace Microsoft.PowerShell.Commands
 
             return rv;
         }
-
-        private IEnumerable<LocalPrincipal> ProcessGroup(LocalGroup group)
-        {
-            _groupPrincipal = Group.SID is not null
-                ? GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.Sid, Group.SID.Value)
-                : GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.SamAccountName, Group.Name);
-            return ProcessesMembership(LocalHelpers.GetMatchingLocalGroupMemebersBySID(group.SID, _principalContext));
-        }
-
-        private IEnumerable<LocalPrincipal> ProcessName(string name)
-        {
-            return ProcessesMembership(LocalHelpers.GetMatchingLocalGroupMembersByName(name, _principalContext));
-        }
-
-        private IEnumerable<LocalPrincipal> ProcessSid(SecurityIdentifier groupSid)
-        {
-            return ProcessesMembership(LocalHelpers.GetMatchingLocalGroupMemebersBySID(groupSid, _principalContext));
-        }
         #endregion Private Methods
 
         #region IDisposable interface
@@ -219,6 +301,8 @@ namespace Microsoft.PowerShell.Commands
             {
                 if (disposing)
                 {
+                    _groupPrincipal?.Dispose();
+                    _groupPrincipalContext.Dispose();
                     _principalContext?.Dispose();
                 }
 
