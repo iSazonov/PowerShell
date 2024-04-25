@@ -106,21 +106,6 @@ namespace System.Management.Automation.SecurityAccountsManager.Extensions
     internal static class SidExtensions
     {
         /// <summary>
-        /// Get the Relative ID (RID) from a <see cref="SecurityIdentifier"/> object.
-        /// </summary>
-        /// <param name="sid">The SecurityIdentifier containing the desired Relative ID.</param>
-        /// <returns>
-        /// A UInt32 value containing the Relative ID in the SecurityIdentifier.
-        /// </returns>
-        internal static UInt32 GetRid(this SecurityIdentifier sid)
-        {
-            byte[] sidBinary = new byte[sid.BinaryLength];
-            sid.GetBinaryForm(sidBinary, 0);
-
-            return BitConverter.ToUInt32(sidBinary, sidBinary.Length - 4);
-        }
-
-        /// <summary>
         /// Gets the Identifier Authority portion of a <see cref="SecurityIdentifier"/>
         /// </summary>
         /// <param name="sid">The SecurityIdentifier containing the desired Authority.</param>

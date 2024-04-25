@@ -8,7 +8,6 @@ using System.Security.Principal;
 
 using Microsoft.PowerShell.Commands;
 
-[module: SuppressMessage("Microsoft.Design", "CA1014:MarkAssembliesWithClsCompliant")]
 [assembly:System.Runtime.Versioning.SupportedOSPlatform("windows")]
 
 namespace System.Management.Automation.SecurityAccountsManager
@@ -44,7 +43,7 @@ namespace System.Management.Automation.SecurityAccountsManager
             // LsaLookupUserAccountType.
             if (Environment.OSVersion.Version.Major >= 10)
             {
-                UInt32 status = Native.Win32.LsaLookupUserAccountType(bSid, out type);
+                UInt32 status = Win32.LsaLookupUserAccountType(bSid, out type);
                 if (NtStatus.IsError(status))
                 {
                     type = LSA_USER_ACCOUNT_TYPE.UnknownUserAccountType;
