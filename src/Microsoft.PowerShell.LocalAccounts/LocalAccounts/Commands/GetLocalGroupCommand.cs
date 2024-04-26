@@ -22,6 +22,7 @@ namespace Microsoft.PowerShell.Commands
     public class GetLocalGroupCommand : Cmdlet, IDisposable
     {
         #region Instance Data
+        // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
         private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
@@ -55,7 +56,19 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (Name == null && SID == null)
+            ProcessAll();
+            ProcessNames();
+            ProcessSids();
+        }
+        #endregion Cmdlet Overrides
+
+        #region Private Methods
+        /// <summary>
+        /// Process all groups if both -Name and -SID are absent.
+        /// </summary>
+        private void ProcessAll()
+        {
+            if (Name is null && SID is null)
             {
                 try
                 {
@@ -66,18 +79,13 @@ namespace Microsoft.PowerShell.Commands
                 }
                 catch (Exception ex)
                 {
-                    WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: null));
+                    WriteError(new ErrorRecord(ex, "InvalidLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: null));
                 }
 
                 return;
             }
-
-            ProcessNames();
-            ProcessSids();
         }
-        #endregion Cmdlet Overrides
 
-        #region Private Methods
         /// <summary>
         /// Process groups requested by -Name.
         /// </summary>
@@ -88,30 +96,32 @@ namespace Microsoft.PowerShell.Commands
         /// </remarks>
         private void ProcessNames()
         {
-            if (Name != null)
+            if (Name is null)
             {
-                foreach (string name in Name)
-                {
-                    try
-                    {
-                        if (WildcardPattern.ContainsWildcardCharacters(name))
-                        {
-                            var pattern = new WildcardPattern(name, WildcardOptions.Compiled | WildcardOptions.IgnoreCase);
+                return;
+            }
 
-                            foreach (LocalGroup localGroup in LocalHelpers.GetMatchingLocalGroups(userPrincipal => pattern.IsMatch(userPrincipal.Name), _principalContext))
-                            {
-                                WriteObject(localGroup);
-                            }
-                        }
-                        else
-                        {
-                            WriteObject(LocalHelpers.GetMatchingLocalGroupsByName(name, _principalContext));
-                        }
-                    }
-                    catch (Exception ex)
+            foreach (string name in Name)
+            {
+                try
+                {
+                    if (WildcardPattern.ContainsWildcardCharacters(name))
                     {
-                        WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(name)));
+                        var pattern = new WildcardPattern(name, WildcardOptions.Compiled | WildcardOptions.IgnoreCase);
+
+                        foreach (LocalGroup localGroup in LocalHelpers.GetMatchingLocalGroups(userPrincipal => pattern.IsMatch(userPrincipal.Name), _principalContext))
+                        {
+                            WriteObject(localGroup);
+                        }
                     }
+                    else
+                    {
+                        WriteObject(LocalHelpers.GetMatchingLocalGroupsByName(name, _principalContext));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteError(new ErrorRecord(ex, "InvalidLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(name)));
                 }
             }
         }
@@ -121,18 +131,20 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private void ProcessSids()
         {
-            if (SID != null)
+            if (SID is null)
             {
-                foreach (SecurityIdentifier sid in SID)
+                return;
+            }
+
+            foreach (SecurityIdentifier sid in SID)
+            {
+                try
                 {
-                    try
-                    {
-                        WriteObject(LocalHelpers.GetMatchingLocalGroupsBySID(sid, _principalContext));
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = sid}));
-                    }
+                    WriteObject(LocalHelpers.GetMatchingLocalGroupsBySID(sid, _principalContext));
+                }
+                catch (Exception ex)
+                {
+                    WriteError(new ErrorRecord(ex, "InvalidLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = sid }));
                 }
             }
         }

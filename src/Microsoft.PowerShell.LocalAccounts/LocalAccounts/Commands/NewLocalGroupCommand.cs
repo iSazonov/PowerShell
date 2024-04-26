@@ -23,6 +23,7 @@ namespace Microsoft.PowerShell.Commands
     public class NewLocalGroupCommand : Cmdlet, IDisposable
     {
         #region Instance Data
+        // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
         private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
@@ -91,7 +92,7 @@ namespace Microsoft.PowerShell.Commands
             }
             catch (Exception ex)
             {
-                WriteError(new ErrorRecord(ex, "InvalidAddOperation", ErrorCategory.InvalidOperation, targetObject: Name));
+                WriteError(new ErrorRecord(ex, "InvalidLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: Name));
             }
         }
         #endregion Cmdlet Overrides

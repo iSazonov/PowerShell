@@ -25,6 +25,7 @@ namespace Microsoft.PowerShell.Commands
     public class RenameLocalGroupCommand : Cmdlet, IDisposable
     {
         #region Instance Data
+        // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
         private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
@@ -109,37 +110,39 @@ namespace Microsoft.PowerShell.Commands
         /// </remarks>
         private void ProcessName()
         {
-            if (Name != null)
+            if (Name is null)
             {
-                if (CheckShouldProcess(Name, NewName))
-                {
-                    try
-                    {
-                        using GroupPrincipal groupPrincipal = GroupPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, Name);
-                        if (groupPrincipal is null)
-                        {
-                            WriteError(new ErrorRecord(new GroupNotFoundException(Name, new LocalGroup(Name)), "GroupNotFound", ErrorCategory.ObjectNotFound, Name));
-                        }
-                        else
-                        {
-                            try
-                            {
-                                DirectoryEntry entry = (DirectoryEntry)groupPrincipal.GetUnderlyingObject();
-                                entry.Rename(NewName);
-                                entry.CommitChanges();
-                            }
-                            catch (UnauthorizedAccessException)
-                            {
-                                var exc = new AccessDeniedException(Strings.AccessDenied);
+                return;
+            }
 
-                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
-                            }
+            if (CheckShouldProcess(Name, NewName))
+            {
+                try
+                {
+                    using GroupPrincipal groupPrincipal = GroupPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, Name);
+                    if (groupPrincipal is null)
+                    {
+                        WriteError(new ErrorRecord(new GroupNotFoundException(Name, new LocalGroup(Name)), "GroupNotFound", ErrorCategory.ObjectNotFound, Name));
+                    }
+                    else
+                    {
+                        try
+                        {
+                            DirectoryEntry entry = (DirectoryEntry)groupPrincipal.GetUnderlyingObject();
+                            entry.Rename(NewName);
+                            entry.CommitChanges();
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        WriteError(new ErrorRecord(ex, "InvalidRemoveLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup(Name)));
-                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteError(new ErrorRecord(ex, "InvalidLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup(Name)));
                 }
             }
         }
@@ -149,37 +152,39 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private void ProcessSid()
         {
-            if (SID != null)
+            if (SID is null)
             {
-                if (CheckShouldProcess(SID.Value, NewName))
-                {
-                    try
-                    {
-                        GroupPrincipal groupPrincipal = GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, SID.Value);
-                        if (groupPrincipal is null)
-                        {
-                            WriteError(new ErrorRecord(new GroupNotFoundException(SID.Value, SID.Value), "GroupNotFound", ErrorCategory.ObjectNotFound, SID.Value));
-                        }
-                        else
-                        {
-                            try
-                            {
-                                DirectoryEntry entry = (DirectoryEntry)groupPrincipal.GetUnderlyingObject();
-                                entry.Rename(NewName);
-                                entry.CommitChanges();
-                            }
-                            catch (UnauthorizedAccessException)
-                            {
-                                var exc = new AccessDeniedException(Strings.AccessDenied);
+                return;
+            }
 
-                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
-                            }
+            if (CheckShouldProcess(SID.Value, NewName))
+            {
+                try
+                {
+                    GroupPrincipal groupPrincipal = GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, SID.Value);
+                    if (groupPrincipal is null)
+                    {
+                        WriteError(new ErrorRecord(new GroupNotFoundException(SID.Value, SID.Value), "GroupNotFound", ErrorCategory.ObjectNotFound, SID.Value));
+                    }
+                    else
+                    {
+                        try
+                        {
+                            DirectoryEntry entry = (DirectoryEntry)groupPrincipal.GetUnderlyingObject();
+                            entry.Rename(NewName);
+                            entry.CommitChanges();
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        WriteError(new ErrorRecord(ex, "InvalidRemoveLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup() { SID = SID }));
-                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteError(new ErrorRecord(ex, "InvalidLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup() { SID = SID }));
                 }
             }
         }
@@ -189,40 +194,42 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private void ProcessGroup()
         {
-            if (InputObject != null)
+            if (InputObject is null)
             {
-                LocalGroup group = InputObject;
-                if (CheckShouldProcess(group.ToString(), NewName))
-                {
-                    try
-                    {
-                        using GroupPrincipal groupPrincipal = group.SID is not null
-                            ? GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, group.SID.Value)
-                            : GroupPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, group.Name);
-                        if (groupPrincipal is null)
-                        {
-                            WriteError(new ErrorRecord(new GroupNotFoundException(group.ToString(), group), "GroupNotFound", ErrorCategory.ObjectNotFound, group));
-                        }
-                        else
-                        {
-                            try
-                            {
-                                DirectoryEntry entry = (DirectoryEntry)groupPrincipal.GetUnderlyingObject();
-                                entry.Rename(NewName);
-                                entry.CommitChanges();
-                            }
-                            catch (UnauthorizedAccessException)
-                            {
-                                var exc = new AccessDeniedException(Strings.AccessDenied);
+                return;
+            }
 
-                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
-                            }
+            LocalGroup group = InputObject;
+            if (CheckShouldProcess(group.ToString(), NewName))
+            {
+                try
+                {
+                    using GroupPrincipal groupPrincipal = group.SID is not null
+                        ? GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, group.SID.Value)
+                        : GroupPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, group.Name);
+                    if (groupPrincipal is null)
+                    {
+                        WriteError(new ErrorRecord(new GroupNotFoundException(group.ToString(), group), "GroupNotFound", ErrorCategory.ObjectNotFound, group));
+                    }
+                    else
+                    {
+                        try
+                        {
+                            DirectoryEntry entry = (DirectoryEntry)groupPrincipal.GetUnderlyingObject();
+                            entry.Rename(NewName);
+                            entry.CommitChanges();
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        WriteError(new ErrorRecord(ex, "InvalidRemoveLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup(group.Name) { SID = group.SID }));
-                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteError(new ErrorRecord(ex, "InvalidLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup(group.Name) { SID = group.SID }));
                 }
             }
         }

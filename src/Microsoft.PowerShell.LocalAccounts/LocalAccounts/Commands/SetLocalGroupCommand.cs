@@ -7,7 +7,6 @@ using System.DirectoryServices.AccountManagement;
 using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
 using System.Security.Principal;
-using System.Text.RegularExpressions;
 using Microsoft.PowerShell.LocalAccounts;
 #endregion
 
@@ -24,6 +23,7 @@ namespace Microsoft.PowerShell.Commands
     public class SetLocalGroupCommand : Cmdlet, IDisposable
     {
         #region Instance Data
+        // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
         private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
@@ -126,7 +126,7 @@ namespace Microsoft.PowerShell.Commands
             }
             catch (Exception ex)
             {
-                WriteError(new ErrorRecord(ex, "InvalidSetLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: InputObject ?? new LocalGroup(Name) { SID = SID }));
+                WriteError(new ErrorRecord(ex, "InvalidLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: InputObject ?? new LocalGroup(Name) { SID = SID }));
             }
             finally
             {
@@ -138,12 +138,12 @@ namespace Microsoft.PowerShell.Commands
         #region Private Methods
         private static LocalGroup? GetTargetGroupObject(GroupPrincipal? group)
             => group is null ? null : new LocalGroup()
-                                        {
-                                            Description = group.Description,
-                                            Name = group.Name,
-                                            PrincipalSource = Sam.GetPrincipalSource(group.Sid),
-                                            SID = group.Sid,
-                                        };
+            {
+                Description = group.Description,
+                Name = group.Name,
+                PrincipalSource = Sam.GetPrincipalSource(group.Sid),
+                SID = group.Sid,
+            };
 
         private bool CheckShouldProcess(string? target)
         {
