@@ -122,7 +122,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 var exc = new AccessDeniedException(Strings.AccessDenied);
 
-                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
+                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: LocalHelpers.GetTargetGroupObject(groupPrincipal)));
             }
             catch (Exception ex)
             {
@@ -136,15 +136,6 @@ namespace Microsoft.PowerShell.Commands
         #endregion Cmdlet Overrides
 
         #region Private Methods
-        private static LocalGroup? GetTargetGroupObject(GroupPrincipal? group)
-            => group is null ? null : new LocalGroup()
-            {
-                Description = group.Description,
-                Name = group.Name,
-                PrincipalSource = Sam.GetPrincipalSource(group.Sid),
-                SID = group.Sid,
-            };
-
         private bool CheckShouldProcess(string? target)
         {
             return ShouldProcess(target, Strings.ActionSetGroup);

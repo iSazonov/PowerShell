@@ -239,4 +239,40 @@ internal static class LocalHelpers
             }
         }
     }
+
+    /// <summary>
+    /// Cretae new <see cref="LocalGroup"/> object from the GroupPrincipal object.
+    /// </summary>
+    /// <param name="group">
+    /// An <see cref="GroupPrincipal"/> object.
+    /// </param>
+    /// <returns>
+    /// An <see cref="LocalGroup"/> object corresponding to the GroupPrincipal parameter.
+    /// </returns>
+    internal static LocalGroup? GetTargetGroupObject(GroupPrincipal? group)
+    => group is null ? null : new LocalGroup()
+    {
+        Description = group.Description,
+        Name = group.Name,
+        PrincipalSource = Sam.GetPrincipalSource(group.Sid),
+        SID = group.Sid,
+    };
+
+    /// <summary>
+    /// Cretae new <see cref="LocalGroup"/> object from the UserPrincipal object.
+    /// </summary>
+    /// <param name="user">
+    /// An <see cref="UserPrincipal"/> object.
+    /// </param>
+    /// <returns>
+    /// An <see cref="LocalGroup"/> object corresponding to the UserPrincipal parameter.
+    /// </returns>
+    internal static LocalUser GetTargetUserObject(UserPrincipal user)
+    => new LocalUser()
+    {
+        Description = user.Description,
+        Name = user.Name,
+        PrincipalSource = Sam.GetPrincipalSource(user.Sid),
+        SID = user.Sid,
+    };
 }

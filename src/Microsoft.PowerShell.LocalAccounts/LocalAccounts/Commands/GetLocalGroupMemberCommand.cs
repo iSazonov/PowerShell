@@ -53,7 +53,7 @@ namespace Microsoft.PowerShell.Commands
             }
             catch (Exception ex)
             {
-                WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupMemberOperation", ErrorCategory.InvalidOperation, targetObject: null));
+                WriteError(new ErrorRecord(ex, "InvalidLocalGroupMemberOperation", ErrorCategory.InvalidOperation, targetObject: null));
             }
         }
         #endregion Cmdlet Overrides

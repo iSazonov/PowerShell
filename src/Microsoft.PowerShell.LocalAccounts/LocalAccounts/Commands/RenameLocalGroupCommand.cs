@@ -92,15 +92,6 @@ namespace Microsoft.PowerShell.Commands
         #endregion Cmdlet Overrides
 
         #region Private Methods
-        private static LocalGroup GetTargetGroupObject(GroupPrincipal group)
-            => new LocalGroup()
-            {
-                Description = group.Description,
-                Name = group.Name,
-                PrincipalSource = Sam.GetPrincipalSource(group.Sid),
-                SID = group.Sid,
-            };
-
         /// <summary>
         /// Process group requested by -Name.
         /// </summary>
@@ -136,7 +127,7 @@ namespace Microsoft.PowerShell.Commands
                         {
                             var exc = new AccessDeniedException(Strings.AccessDenied);
 
-                            ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
+                            ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: LocalHelpers.GetTargetGroupObject(groupPrincipal)));
                         }
                     }
                 }
@@ -178,7 +169,7 @@ namespace Microsoft.PowerShell.Commands
                         {
                             var exc = new AccessDeniedException(Strings.AccessDenied);
 
-                            ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
+                            ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: LocalHelpers.GetTargetGroupObject(groupPrincipal)));
                         }
                     }
                 }
@@ -223,7 +214,7 @@ namespace Microsoft.PowerShell.Commands
                         {
                             var exc = new AccessDeniedException(Strings.AccessDenied);
 
-                            ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetGroupObject(groupPrincipal)));
+                            ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: LocalHelpers.GetTargetGroupObject(groupPrincipal)));
                         }
                     }
                 }

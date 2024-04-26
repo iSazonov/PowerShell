@@ -78,15 +78,6 @@ namespace Microsoft.PowerShell.Commands
         #endregion Cmdlet Overrides
 
         #region Private Methods
-        private static LocalUser GetTargetUserObject(UserPrincipal user)
-            => new LocalUser()
-            {
-                Description = user.Description,
-                Name = user.Name,
-                PrincipalSource = Sam.GetPrincipalSource(user.Sid),
-                SID = user.Sid,
-            };
-
         /// <summary>
         /// Process users requested by -Name.
         /// </summary>
@@ -127,7 +118,7 @@ namespace Microsoft.PowerShell.Commands
                             {
                                 var exc = new AccessDeniedException(Strings.AccessDenied);
 
-                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
+                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: LocalHelpers.GetTargetUserObject(userPrincipal)));
                             }
                         }
                     }
@@ -175,7 +166,7 @@ namespace Microsoft.PowerShell.Commands
                             {
                                 var exc = new AccessDeniedException(Strings.AccessDenied);
 
-                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
+                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: LocalHelpers.GetTargetUserObject(userPrincipal)));
                             }
                         }
                     }
@@ -225,7 +216,7 @@ namespace Microsoft.PowerShell.Commands
                             {
                                 var exc = new AccessDeniedException(Strings.AccessDenied);
 
-                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
+                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: LocalHelpers.GetTargetUserObject(userPrincipal)));
                             }
                         }
                     }

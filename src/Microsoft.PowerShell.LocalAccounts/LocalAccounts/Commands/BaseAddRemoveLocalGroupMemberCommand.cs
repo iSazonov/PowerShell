@@ -69,34 +69,25 @@ namespace Microsoft.PowerShell.Commands
                 catch (UnauthorizedAccessException)
                 {
                     var exc = new AccessDeniedException(member);
-                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetObject()));
+                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: LocalHelpers.GetTargetGroupObject(_groupPrincipal)));
                 }
                 catch (PrincipalExistsException)
                 {
-                    var exc = new MemberExistsException(member.ToString(), _groupPrincipal.Name, GetTargetObject());
-                    WriteError(new ErrorRecord(exc, "MemberExists", ErrorCategory.ResourceExists, targetObject: GetTargetObject()));
+                    var exc = new MemberExistsException(member.ToString(), _groupPrincipal.Name, LocalHelpers.GetTargetGroupObject(_groupPrincipal));
+                    WriteError(new ErrorRecord(exc, "MemberExists", ErrorCategory.ResourceExists, targetObject: LocalHelpers.GetTargetGroupObject(_groupPrincipal)));
                 }
                 catch (PrincipalNotFoundException)
                 {
                     var exc = new MemberNotFoundException(member.ToString(), _groupPrincipal.Name);
-                    WriteError(new ErrorRecord(exc, "PrincipalNotFound", ErrorCategory.ObjectNotFound, targetObject: GetTargetObject()));
+                    WriteError(new ErrorRecord(exc, "PrincipalNotFound", ErrorCategory.ObjectNotFound, targetObject: LocalHelpers.GetTargetGroupObject(_groupPrincipal)));
                 }
                 catch (Exception ex)
                 {
-                    WriteError(new ErrorRecord(ex, "InvalidLocalGroupMemberOperation", ErrorCategory.InvalidOperation, targetObject: GetTargetObject()));
+                    WriteError(new ErrorRecord(ex, "InvalidLocalGroupMemberOperation", ErrorCategory.InvalidOperation, targetObject: LocalHelpers.GetTargetGroupObject(_groupPrincipal)));
 
                 }
             }
         }
-
-        private LocalGroup? GetTargetObject()
-            => _groupPrincipal is null ? null : new LocalGroup()
-            {
-                Description = _groupPrincipal.Description,
-                Name = _groupPrincipal.Name,
-                PrincipalSource = Sam.GetPrincipalSource(_groupPrincipal.Sid),
-                SID = _groupPrincipal.Sid,
-            };
 
         /// <summary>
         /// Creates a <see cref="Principal"/> object ready to be processed by the cmdlet.

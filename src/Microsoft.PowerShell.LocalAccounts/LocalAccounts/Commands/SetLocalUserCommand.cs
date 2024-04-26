@@ -52,7 +52,7 @@ namespace Microsoft.PowerShell.Commands
         /// the account will never expire. The default value is null (account never expires).
         /// </summary>
         [Parameter]
-        public System.DateTime AccountExpires { get; set; }
+        public DateTime AccountExpires { get; set; }
 
         /// <summary>
         /// The following is the definition of the input parameter "AccountNeverExpires".
