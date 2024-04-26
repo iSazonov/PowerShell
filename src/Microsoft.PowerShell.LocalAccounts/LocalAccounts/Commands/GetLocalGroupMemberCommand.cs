@@ -22,30 +22,9 @@ namespace Microsoft.PowerShell.Commands
             DefaultParameterSetName = "Default",
             HelpUri = "https://go.microsoft.com/fwlink/?LinkId=717988")]
     [Alias("glgm")]
-    public class GetLocalGroupMemberCommand : Cmdlet, IDisposable
+    public class GetLocalGroupMemberCommand : BaseLocalGroupMemberCommand
     {
-        #region Instance Data
-        // Explicitly point a domain name of the computer otherwise a domain name of current user would be used by default.
-        private PrincipalContext _principalContext = new PrincipalContext(ContextType.Domain, LocalHelpers.GetComputerDomainName());
-        private GroupPrincipal? _groupPrincipal;
-
-        // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
-        private PrincipalContext _groupPrincipalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
-        #endregion Instance Data
-
         #region Parameter Properties
-        /// <summary>
-        /// The following is the definition of the input parameter "Group".
-        /// The security group from the local Security Accounts Manager.
-        /// </summary>
-        [Parameter(Mandatory = true,
-                   Position = 0,
-                   ValueFromPipeline = true,
-                   ValueFromPipelineByPropertyName = true,
-                   ParameterSetName = "Group")]
-        [ValidateNotNull]
-        public LocalGroup Group { get; set; } = null!;
-
         /// <summary>
         /// The following is the definition of the input parameter "Member".
         /// Specifies the name of the user or group that is a member of this group. If
@@ -55,68 +34,9 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(Position = 1)]
         [ValidateNotNullOrEmpty]
         public string Member { get; set; } = null!;
-
-        /// <summary>
-        /// The following is the definition of the input parameter "Name".
-        /// The security group from the local Security Accounts Manager.
-        /// </summary>
-        [Parameter(Mandatory = true,
-                   Position = 0,
-                   ValueFromPipeline = true,
-                   ValueFromPipelineByPropertyName = true,
-                   ParameterSetName = "Default")]
-        [ValidateNotNullOrEmpty]
-        public string Name { get; set; } = null!;
-
-        /// <summary>
-        /// The following is the definition of the input parameter "SID".
-        /// The security group from the local Security Accounts Manager.
-        /// </summary>
-        [Parameter(Mandatory = true,
-                   Position = 0,
-                   ValueFromPipeline = true,
-                   ValueFromPipelineByPropertyName = true,
-                   ParameterSetName = "SecurityIdentifier")]
-        [ValidateNotNullOrEmpty]
-        public SecurityIdentifier SID { get; set; } = null!;
         #endregion Parameter Properties
 
         #region Cmdlet Overrides
-        /// <summary>
-        /// BeginProcessing method.
-        /// </summary>
-        protected override void BeginProcessing()
-        {
-            try
-            {
-                if (Group is not null)
-                {
-                    _groupPrincipal = Group.SID is not null
-                        ? GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.Sid, Group.SID.Value)
-                        : GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.SamAccountName, Group.Name);
-                }
-                else if (Name is not null)
-                {
-                    _groupPrincipal = GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.SamAccountName, Name);
-
-                }
-                else if (SID is not null)
-                {
-                    _groupPrincipal = GroupPrincipal.FindByIdentity(_groupPrincipalContext, IdentityType.Sid, SID.Value);
-                }
-            }
-            catch (Exception ex)
-            {
-                ThrowTerminatingError(new ErrorRecord(ex, "GroupNotFound", ErrorCategory.ObjectNotFound, Group ?? new LocalGroup(Name) { SID = SID }));
-            }
-
-            if (_groupPrincipal is null)
-            {
-                LocalGroup target = Group ?? new LocalGroup(Name) { SID = SID };
-                ThrowTerminatingError(new ErrorRecord(new GroupNotFoundException(target.ToString(), target), "GroupNotFound", ErrorCategory.ObjectNotFound, target));
-            }
-        }
-
         /// <summary>
         /// ProcessRecord method.
         /// </summary>
@@ -198,13 +118,21 @@ namespace Microsoft.PowerShell.Commands
                 }
                 catch (PrincipalOperationException)
                 {
-                    // An error (1332) occurred while enumerating the group membership.  The member's SID could not be resolved.
+                    // An error occurred in members.MoveNext() while enumerating the group membership. The member's SID could not be resolved.
                     hasItem = true;
+                }
+                catch (IdentityNotMappedException)
+                {
+                    // Ignore an error in principal.Sid.Translate() while getting a domain name of the member.
+                }
+                catch (SystemException)
+                {
+                    // Ignore an error in principal.Sid.Translate() while getting a domain name of the member.
                 }
 
                 if (localPrincipal is not null)
                 {
-                    // `yield` can not be in try with catch block.
+                    // `yield` can not be in `try` with `catch` block.
                     yield return localPrincipal;
                 }
             } while (hasItem);
@@ -214,7 +142,7 @@ namespace Microsoft.PowerShell.Commands
         {
             List<LocalPrincipal> rv;
 
-            // if no member filters are specified, return all
+            // if no member filters are specified, return all.
             if (Member is null)
             {
                 rv = new List<LocalPrincipal>(membership);
@@ -270,45 +198,11 @@ namespace Microsoft.PowerShell.Commands
                 }
             }
 
-            // sort the resulting principals by name
+            // Sort the resulting principals by name.
             rv.Sort(static (p1, p2) => string.Compare(p1.Name, p2.Name, StringComparison.CurrentCultureIgnoreCase));
 
             return rv;
         }
         #endregion Private Methods
-
-        #region IDisposable interface
-        private bool _disposed;
-
-        /// <summary>
-        /// Dispose the DisableLocalUserCommand.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Implementation of IDisposable for both manual Dispose() and finalizer-called disposal of resources.
-        /// </summary>
-        /// <param name="disposing">
-        /// Specified as true when Dispose() was called, false if this is called from the finalizer.
-        /// </param>
-        protected void Dispose(bool disposing)
-        {
-            if (!_disposed)
-            {
-                if (disposing)
-                {
-                    _groupPrincipal?.Dispose();
-                    _groupPrincipalContext.Dispose();
-                    _principalContext?.Dispose();
-                }
-
-                _disposed = true;
-            }
-        }
-        #endregion
     }
 }
