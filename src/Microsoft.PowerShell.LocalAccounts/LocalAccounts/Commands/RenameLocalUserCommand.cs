@@ -25,6 +25,7 @@ namespace Microsoft.PowerShell.Commands
     public class RenameLocalUserCommand : Cmdlet, IDisposable
     {
         #region Instance Data
+        // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
         private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
@@ -109,37 +110,39 @@ namespace Microsoft.PowerShell.Commands
         /// </remarks>
         private void ProcessName()
         {
-            if (Name != null)
+            if (Name is null)
             {
-                if (CheckShouldProcess(Name, NewName))
-                {
-                    try
-                    {
-                        using UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, Name);
-                        if (userPrincipal is null)
-                        {
-                            WriteError(new ErrorRecord(new UserNotFoundException(Name, new LocalUser(Name)), "UserNotFound", ErrorCategory.ObjectNotFound, Name));
-                        }
-                        else
-                        {
-                            try
-                            {
-                                DirectoryEntry entry = (DirectoryEntry)userPrincipal.GetUnderlyingObject();
-                                entry.Rename(NewName);
-                                entry.CommitChanges();
-                            }
-                            catch (UnauthorizedAccessException)
-                            {
-                                var exc = new AccessDeniedException(Strings.AccessDenied);
+                return;
+            }
 
-                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
-                            }
+            if (CheckShouldProcess(Name, NewName))
+            {
+                try
+                {
+                    using UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, Name);
+                    if (userPrincipal is null)
+                    {
+                        WriteError(new ErrorRecord(new UserNotFoundException(Name, new LocalUser(Name)), "UserNotFound", ErrorCategory.ObjectNotFound, Name));
+                    }
+                    else
+                    {
+                        try
+                        {
+                            DirectoryEntry entry = (DirectoryEntry)userPrincipal.GetUnderlyingObject();
+                            entry.Rename(NewName);
+                            entry.CommitChanges();
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        WriteError(new ErrorRecord(ex, "InvalidRemoveLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(Name)));
-                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(Name)));
                 }
             }
         }
@@ -149,37 +152,39 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private void ProcessSid()
         {
-            if (SID != null)
+            if (SID is null)
             {
-                if (CheckShouldProcess(SID.Value, NewName))
-                {
-                    try
-                    {
-                        UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, SID.Value);
-                        if (userPrincipal is null)
-                        {
-                            WriteError(new ErrorRecord(new UserNotFoundException(SID.Value, SID.Value), "UserNotFound", ErrorCategory.ObjectNotFound, SID.Value));
-                        }
-                        else
-                        {
-                            try
-                            {
-                                DirectoryEntry entry = (DirectoryEntry)userPrincipal.GetUnderlyingObject();
-                                entry.Rename(NewName);
-                                entry.CommitChanges();
-                            }
-                            catch (UnauthorizedAccessException)
-                            {
-                                var exc = new AccessDeniedException(Strings.AccessDenied);
+                return;
+            }
 
-                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
-                            }
+            if (CheckShouldProcess(SID.Value, NewName))
+            {
+                try
+                {
+                    UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, SID.Value);
+                    if (userPrincipal is null)
+                    {
+                        WriteError(new ErrorRecord(new UserNotFoundException(SID.Value, SID.Value), "UserNotFound", ErrorCategory.ObjectNotFound, SID.Value));
+                    }
+                    else
+                    {
+                        try
+                        {
+                            DirectoryEntry entry = (DirectoryEntry)userPrincipal.GetUnderlyingObject();
+                            entry.Rename(NewName);
+                            entry.CommitChanges();
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        WriteError(new ErrorRecord(ex, "InvalidRemoveLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = SID }));
-                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = SID }));
                 }
             }
         }
@@ -189,40 +194,42 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private void ProcessUser()
         {
-            if (InputObject != null)
+            if (InputObject is null)
             {
-                LocalUser user = InputObject;
-                if (CheckShouldProcess(user.ToString(), NewName))
-                {
-                    try
-                    {
-                        using UserPrincipal userPrincipal = user.SID is not null
-                            ? UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, user.SID.Value)
-                            : UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, user.Name);
-                        if (userPrincipal is null)
-                        {
-                            WriteError(new ErrorRecord(new UserNotFoundException(user.ToString(), user), "UserNotFound", ErrorCategory.ObjectNotFound, user));
-                        }
-                        else
-                        {
-                            try
-                            {
-                                DirectoryEntry entry = (DirectoryEntry)userPrincipal.GetUnderlyingObject();
-                                entry.Rename(NewName);
-                                entry.CommitChanges();
-                            }
-                            catch (UnauthorizedAccessException)
-                            {
-                                var exc = new AccessDeniedException(Strings.AccessDenied);
+                return;
+            }
 
-                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
-                            }
+            LocalUser user = InputObject;
+            if (CheckShouldProcess(user.ToString(), NewName))
+            {
+                try
+                {
+                    using UserPrincipal userPrincipal = user.SID is not null
+                        ? UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, user.SID.Value)
+                        : UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, user.Name);
+                    if (userPrincipal is null)
+                    {
+                        WriteError(new ErrorRecord(new UserNotFoundException(user.ToString(), user), "UserNotFound", ErrorCategory.ObjectNotFound, user));
+                    }
+                    else
+                    {
+                        try
+                        {
+                            DirectoryEntry entry = (DirectoryEntry)userPrincipal.GetUnderlyingObject();
+                            entry.Rename(NewName);
+                            entry.CommitChanges();
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        WriteError(new ErrorRecord(ex, "InvalidRemoveLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(user.Name) { SID = user.SID }));
-                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(user.Name) { SID = user.SID }));
                 }
             }
         }

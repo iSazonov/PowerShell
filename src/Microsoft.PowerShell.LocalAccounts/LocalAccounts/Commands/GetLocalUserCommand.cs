@@ -13,8 +13,7 @@ namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
     /// The Get-LocalUser cmdlet gets local user accounts from the Windows Security
-    /// Accounts Manager. This includes local accounts that have been connected to a
-    /// Microsoft account.
+    /// Accounts Manager. This includes local accounts that have been connected to a Microsoft account.
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "LocalUser",
             DefaultParameterSetName = "Default",
@@ -23,14 +22,15 @@ namespace Microsoft.PowerShell.Commands
     public class GetLocalUserCommand : Cmdlet, IDisposable
     {
         #region Instance Data
+        // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
         private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties
         /// <summary>
         /// The following is the definition of the input parameter "Name".
-        /// Specifies the local user accounts to get from the local Security Accounts
-        /// Manager. This accepts a name or wildcard string.
+        /// Specifies the local user accounts to get from the local Security Accounts Manager.
+        /// This accepts a name or wildcard string.
         /// </summary>
         [Parameter(Position = 0,
                    ValueFromPipeline = true,
@@ -57,6 +57,18 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
+            ProcessAll();
+            ProcessNames();
+            ProcessSids();
+        }
+        #endregion Cmdlet Overrides
+
+        #region Private Methods
+        /// <summary>
+        /// Process all users if both -Name and -SID are absent.
+        /// </summary>
+        private void ProcessAll()
+        {
             if (Name is null && SID is null)
             {
                 try
@@ -68,18 +80,13 @@ namespace Microsoft.PowerShell.Commands
                 }
                 catch (Exception ex)
                 {
-                    WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: null));
+                    WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: null));
                 }
 
                 return;
             }
-
-            ProcessNames();
-            ProcessSids();
         }
-        #endregion Cmdlet Overrides
 
-        #region Private Methods
         /// <summary>
         /// Process users requested by -Name.
         /// </summary>
@@ -90,29 +97,36 @@ namespace Microsoft.PowerShell.Commands
         /// </remarks>
         private void ProcessNames()
         {
-            if (Name is not null)
+            if (Name is null)
             {
-                foreach (string name in Name)
+                return;
+            }
+
+            foreach (string name in Name)
+            {
+                if (name is null)
                 {
-                    try
+                    continue;
+                }
+
+                try
+                {
+                    if (WildcardPattern.ContainsWildcardCharacters(name))
                     {
-                        if (WildcardPattern.ContainsWildcardCharacters(name))
+                        var pattern = new WildcardPattern(name, WildcardOptions.Compiled | WildcardOptions.IgnoreCase);
+                        foreach (LocalUser localUser in LocalHelpers.GetMatchingLocalUsers(userPrincipal => pattern.IsMatch(userPrincipal.Name), _principalContext))
                         {
-                            var pattern = new WildcardPattern(name, WildcardOptions.Compiled | WildcardOptions.IgnoreCase);
-                            foreach (LocalUser localUser in LocalHelpers.GetMatchingLocalUsers(userPrincipal => pattern.IsMatch(userPrincipal.Name), _principalContext))
-                            {
-                                WriteObject(localUser);
-                            }
-                        }
-                        else
-                        {
-                            WriteObject(LocalHelpers.GetMatchingLocalUsersByName(name, _principalContext));
+                            WriteObject(localUser);
                         }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(name)));
+                        WriteObject(LocalHelpers.GetMatchingLocalUsersByName(name, _principalContext));
                     }
+                }
+                catch (Exception ex)
+                {
+                    WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(name)));
                 }
             }
         }
@@ -122,18 +136,25 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private void ProcessSids()
         {
-            if (SID is not null)
+            if (SID is null)
             {
-                foreach (SecurityIdentifier sid in SID)
+                return;
+            }
+
+            foreach (SecurityIdentifier sid in SID)
+            {
+                if (sid is null)
                 {
-                    try
-                    {
-                        WriteObject(LocalHelpers.GetMatchingLocalUsersBySID(sid, _principalContext));
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteError(new ErrorRecord(ex, "InvalidGetLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = sid }));
-                    }
+                    continue;
+                }
+
+                try
+                {
+                    WriteObject(LocalHelpers.GetMatchingLocalUsersBySID(sid, _principalContext));
+                }
+                catch (Exception ex)
+                {
+                    WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = sid }));
                 }
             }
         }

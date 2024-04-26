@@ -41,6 +41,7 @@ namespace Microsoft.PowerShell.Commands
         #endregion Static Data
 
         #region Instance Data
+        // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
         private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
@@ -48,8 +49,7 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// The following is the definition of the input parameter "AccountExpires".
         /// Specifies when the user account will expire. Set to null to indicate that
-        /// the account will never expire. The default value is null (account never
-        /// expires).
+        /// the account will never expire. The default value is null (account never expires).
         /// </summary>
         [Parameter]
         public System.DateTime AccountExpires { get; set; }
@@ -80,8 +80,7 @@ namespace Microsoft.PowerShell.Commands
 
         /// <summary>
         /// The following is the definition of the input parameter "InputObject".
-        /// Specifies the of the local user account to modify in the local Security
-        /// Accounts Manager.
+        /// Specifies the of the local user account to modify in the local Security Accounts Manager.
         /// </summary>
         [Parameter(Mandatory = true,
                    Position = 0,
@@ -132,8 +131,8 @@ namespace Microsoft.PowerShell.Commands
 
         /// <summary>
         /// The following is the definition of the input parameter "UserMayChangePassword".
-        /// Specifies whether the user is allowed to change the password on this
-        /// account. The default value is True.
+        /// Specifies whether the user is allowed to change the password on this  account.
+        /// The default value is True.
         /// </summary>
         [Parameter]
         public bool UserMayChangePassword { get; set; }
@@ -165,9 +164,9 @@ namespace Microsoft.PowerShell.Commands
                     LocalUser user = InputObject;
                     if (CheckShouldProcess(user.ToString()))
                     {
-                       userPrincipal = user.SID is not null
-                            ? UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, user.SID.Value)
-                            : UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, user.Name);
+                        userPrincipal = user.SID is not null
+                             ? UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, user.SID.Value)
+                             : UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, user.Name);
                     }
                 }
                 else if (Name is not null)
@@ -242,11 +241,11 @@ namespace Microsoft.PowerShell.Commands
             {
                 var exc = new InvalidPasswordException(Strings.InvalidPassword);
 
-                ThrowTerminatingError(new ErrorRecord(exc, "InvalidPassword", ErrorCategory.PermissionDenied, targetObject: Name));
+                ThrowTerminatingError(new ErrorRecord(exc, "InvalidPassword", ErrorCategory.InvalidData, targetObject: Name));
             }
             catch (Exception ex)
             {
-                WriteError(new ErrorRecord(ex, "InvalidAddOperation", ErrorCategory.InvalidOperation, targetObject: Name));
+                WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: Name));
             }
         }
         #endregion Cmdlet Overrides

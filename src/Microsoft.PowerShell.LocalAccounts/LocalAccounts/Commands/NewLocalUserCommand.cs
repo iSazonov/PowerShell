@@ -38,6 +38,7 @@ namespace Microsoft.PowerShell.Commands
         #endregion Static Data
 
         #region Instance Data
+        // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
         private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
@@ -49,7 +50,6 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(ValueFromPipelineByPropertyName = true)]
         public DateTime AccountExpires { get; set; }
 
-        // This parameter added by hand (copied from SetLocalUserCommand), not by Cmdlet Designer
         /// <summary>
         /// The following is the definition of the input parameter "AccountNeverExpires".
         /// Specifies that the account will not expire.
@@ -74,8 +74,7 @@ namespace Microsoft.PowerShell.Commands
 
         /// <summary>
         /// The following is the definition of the input parameter "FullName".
-        /// Specifies the full name of the user account. This is different from the
-        /// username of the user account.
+        /// Specifies the full name of the user account. This is different from the username of the user account.
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
         [ValidateNotNull]
@@ -96,8 +95,7 @@ namespace Microsoft.PowerShell.Commands
 
         /// <summary>
         /// The following is the definition of the input parameter "Password".
-        /// Specifies the password for the local user account. A password can contain up
-        /// to 127 characters.
+        /// Specifies the password for the local user account. A password can contain up to 127 characters.
         /// </summary>
         [Parameter(Mandatory = true,
                    ParameterSetName = "Password",
@@ -124,8 +122,7 @@ namespace Microsoft.PowerShell.Commands
 
         /// <summary>
         /// The following is the definition of the input parameter "UserMayNotChangePassword".
-        /// Specifies whether the user is allowed to change the password on this
-        /// account.
+        /// Specifies whether the user is allowed to change the password on this account.
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
         public SwitchParameter UserMayNotChangePassword { get; set; }
@@ -219,7 +216,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 var exc = new InvalidPasswordException(Strings.InvalidPassword);
 
-                ThrowTerminatingError(new ErrorRecord(exc, "InvalidPassword", ErrorCategory.PermissionDenied, targetObject: Name));
+                ThrowTerminatingError(new ErrorRecord(exc, "InvalidPassword", ErrorCategory.InvalidData, targetObject: Password));
             }
             catch (PrincipalExistsException)
             {
@@ -231,7 +228,7 @@ namespace Microsoft.PowerShell.Commands
             }
             catch (Exception ex)
             {
-                WriteError(new ErrorRecord(ex, "InvalidAddOperation", ErrorCategory.InvalidOperation, targetObject: Name));
+                WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: Name));
             }
         }
         #endregion Cmdlet Overrides

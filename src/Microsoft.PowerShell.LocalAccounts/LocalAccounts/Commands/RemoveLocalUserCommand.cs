@@ -14,8 +14,7 @@ using Microsoft.PowerShell.LocalAccounts;
 namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
-    /// The Remove-LocalUser cmdlet deletes a user account from the Windows Security
-    /// Accounts manager.
+    /// The Remove-LocalUser cmdlet deletes a user account from the Windows Security Accounts manager.
     /// </summary>
     [Cmdlet(VerbsCommon.Remove, "LocalUser",
             SupportsShouldProcess = true,
@@ -24,14 +23,14 @@ namespace Microsoft.PowerShell.Commands
     public class RemoveLocalUserCommand : Cmdlet, IDisposable
     {
         #region Instance Data
+        // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
         private PrincipalContext _principalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties
         /// <summary>
         /// The following is the definition of the input parameter "InputObject".
-        /// Specifies the of the local user accounts to remove in the local Security
-        /// Accounts Manager.
+        /// Specifies the of the local user accounts to remove in the local Security Accounts Manager.
         /// </summary>
         [Parameter(Mandatory = true,
                    Position = 0,
@@ -43,8 +42,7 @@ namespace Microsoft.PowerShell.Commands
 
         /// <summary>
         /// The following is the definition of the input parameter "Name".
-        /// Specifies the user accounts to be deleted from the local Security Accounts
-        /// Manager.
+        /// Specifies the user accounts to be deleted from the local Security Accounts Manager.
         /// </summary>
         [Parameter(Mandatory = true,
                    Position = 0,
@@ -56,8 +54,7 @@ namespace Microsoft.PowerShell.Commands
 
         /// <summary>
         /// The following is the definition of the input parameter "SID".
-        /// Specifies the local user accounts to remove by
-        /// System.Security.Principal.SecurityIdentifier.
+        /// Specifies the local user accounts to remove by System.Security.Principal.SecurityIdentifier.
         /// </summary>
         [Parameter(Mandatory = true,
                    Position = 0,
@@ -99,37 +96,44 @@ namespace Microsoft.PowerShell.Commands
         /// </remarks>
         private void ProcessNames()
         {
-            if (Name != null)
+            if (Name is null)
             {
-                foreach (var name in Name)
-                {
-                    if (CheckShouldProcess(name))
-                    {
-                        try
-                        {
-                            using UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, name);
-                            if (userPrincipal is null)
-                            {
-                                WriteError(new ErrorRecord(new UserNotFoundException(name, new LocalUser(name)), "UserNotFound", ErrorCategory.ObjectNotFound, name));
-                            }
-                            else
-                            {
-                                try
-                                {
-                                    userPrincipal.Delete();
-                                }
-                                catch (UnauthorizedAccessException)
-                                {
-                                    var exc = new AccessDeniedException(Strings.AccessDenied);
+                return;
+            }
 
-                                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
-                                }
+            foreach (var name in Name)
+            {
+                if (name is null)
+                {
+                    continue;
+                }
+
+                if (CheckShouldProcess(name))
+                {
+                    try
+                    {
+                        using UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, name);
+                        if (userPrincipal is null)
+                        {
+                            WriteError(new ErrorRecord(new UserNotFoundException(name, new LocalUser(name)), "UserNotFound", ErrorCategory.ObjectNotFound, name));
+                        }
+                        else
+                        {
+                            try
+                            {
+                                userPrincipal.Delete();
+                            }
+                            catch (UnauthorizedAccessException)
+                            {
+                                var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            WriteError(new ErrorRecord(ex, "InvalidRemoveLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(name)));
-                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(name)));
                     }
                 }
             }
@@ -140,37 +144,44 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private void ProcessSids()
         {
-            if (SID != null)
+            if (SID is null)
             {
-                foreach (SecurityIdentifier sid in SID)
-                {
-                    if (CheckShouldProcess(sid.Value))
-                    {
-                        try
-                        {
-                            UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, sid.Value);
-                            if (userPrincipal is null)
-                            {
-                                WriteError(new ErrorRecord(new UserNotFoundException(sid.Value, sid.Value), "UserNotFound", ErrorCategory.ObjectNotFound, sid.Value));
-                            }
-                            else
-                            {
-                                try
-                                {
-                                    userPrincipal.Delete();
-                                }
-                                catch (UnauthorizedAccessException)
-                                {
-                                    var exc = new AccessDeniedException(Strings.AccessDenied);
+                return;
+            }
 
-                                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
-                                }
+            foreach (SecurityIdentifier sid in SID)
+            {
+                if (sid is null)
+                {
+                    continue;
+                }
+
+                if (CheckShouldProcess(sid.Value))
+                {
+                    try
+                    {
+                        UserPrincipal userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, sid.Value);
+                        if (userPrincipal is null)
+                        {
+                            WriteError(new ErrorRecord(new UserNotFoundException(sid.Value, sid.Value), "UserNotFound", ErrorCategory.ObjectNotFound, sid.Value));
+                        }
+                        else
+                        {
+                            try
+                            {
+                                userPrincipal.Delete();
+                            }
+                            catch (UnauthorizedAccessException)
+                            {
+                                var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            WriteError(new ErrorRecord(ex, "InvalidRemoveLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = sid }));
-                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = sid }));
                     }
                 }
             }
@@ -181,39 +192,46 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         private void ProcessUsers()
         {
-            if (InputObject != null)
+            if (InputObject is null)
             {
-                foreach (LocalUser user in InputObject)
-                {
-                    if (CheckShouldProcess(user.ToString()))
-                    {
-                        try
-                        {
-                            using UserPrincipal userPrincipal = user.SID is not null
-                                ? UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, user.SID.Value)
-                                : UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, user.Name);
-                            if (userPrincipal is null)
-                            {
-                                WriteError(new ErrorRecord(new UserNotFoundException(user.ToString(), user), "GroupNotFound", ErrorCategory.ObjectNotFound, user));
-                            }
-                            else
-                            {
-                                try
-                                {
-                                    userPrincipal.Delete();
-                                }
-                                catch (UnauthorizedAccessException)
-                                {
-                                    var exc = new AccessDeniedException(Strings.AccessDenied);
+                return;
+            }
 
-                                    ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
-                                }
+            foreach (LocalUser user in InputObject)
+            {
+                if (user is null)
+                {
+                    continue;
+                }
+
+                if (CheckShouldProcess(user.ToString()))
+                {
+                    try
+                    {
+                        using UserPrincipal userPrincipal = user.SID is not null
+                            ? UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, user.SID.Value)
+                            : UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, user.Name);
+                        if (userPrincipal is null)
+                        {
+                            WriteError(new ErrorRecord(new UserNotFoundException(user.ToString(), user), "UserNotFound", ErrorCategory.ObjectNotFound, user));
+                        }
+                        else
+                        {
+                            try
+                            {
+                                userPrincipal.Delete();
+                            }
+                            catch (UnauthorizedAccessException)
+                            {
+                                var exc = new AccessDeniedException(Strings.AccessDenied);
+
+                                ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: GetTargetUserObject(userPrincipal)));
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            WriteError(new ErrorRecord(ex, "InvalidRemoveLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup(user.Name) { SID = user.SID }));
-                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup(user.Name) { SID = user.SID }));
                     }
                 }
             }
