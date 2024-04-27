@@ -129,6 +129,18 @@ namespace Microsoft.PowerShell.Commands
 
                             ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: LocalHelpers.GetTargetGroupObject(groupPrincipal)));
                         }
+                        catch (System.Runtime.InteropServices.COMException e) when (e.ErrorCode == -2147022694)
+                        {
+                            var exc = new InvalidNameException(NewName, LocalHelpers.GetTargetGroupObject(groupPrincipal), e);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "InvalidName", ErrorCategory.InvalidArgument, targetObject: LocalHelpers.GetTargetGroupObject(groupPrincipal)));
+                        }
+                        catch (System.Runtime.InteropServices.COMException e) when (e.ErrorCode == -2147023517)
+                        {
+                            var exc = new NameInUseException(NewName, LocalHelpers.GetTargetGroupObject(groupPrincipal), e);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "NameInUse", ErrorCategory.InvalidArgument, targetObject: LocalHelpers.GetTargetGroupObject(groupPrincipal)));
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -251,7 +263,7 @@ namespace Microsoft.PowerShell.Commands
         private bool _disposed;
 
         /// <summary>
-        /// Dispose the DisableLocalUserCommand.
+        /// Dispose the command.
         /// </summary>
         public void Dispose()
         {

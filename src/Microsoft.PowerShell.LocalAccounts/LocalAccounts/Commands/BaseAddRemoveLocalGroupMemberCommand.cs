@@ -125,7 +125,7 @@ namespace Microsoft.PowerShell.Commands
             // If the member has a SID, we can use it directly.
             if (member.SID is not null)
             {
-                principal = Principal.FindByIdentity(_principalContext, IdentityType.Sid, member.SID.Value);
+                principal = Principal.FindByIdentity(_principalMachineContext, IdentityType.Sid, member.SID.Value) ?? Principal.FindByIdentity(_principalDomainContext, IdentityType.Sid, member.SID.Value);
             }
             else
             {
@@ -135,11 +135,11 @@ namespace Microsoft.PowerShell.Commands
                 if (sid is not null)
                 {
                     member.SID = sid;
-                    principal = Principal.FindByIdentity(_principalContext, IdentityType.Sid, member.SID.Value);
+                    principal = Principal.FindByIdentity(_principalMachineContext, IdentityType.Sid, member.SID.Value) ?? Principal.FindByIdentity(_principalDomainContext, IdentityType.Sid, member.SID.Value);
                 }
                 else
                 {
-                    principal = Principal.FindByIdentity(_principalContext, IdentityType.SamAccountName, member.Name);
+                    principal = Principal.FindByIdentity(_principalMachineContext, IdentityType.SamAccountName, member.Name) ?? Principal.FindByIdentity(_principalDomainContext, IdentityType.SamAccountName, member.Name);
                 }
             }
 

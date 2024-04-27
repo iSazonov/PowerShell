@@ -183,6 +183,18 @@ namespace Microsoft.PowerShell.Commands
 
                             ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: LocalHelpers.GetTargetUserObject(userPrincipal)));
                         }
+                        catch (System.Runtime.InteropServices.COMException e) when (e.ErrorCode == -2147022694)
+                        {
+                            var exc = new InvalidNameException(NewName, LocalHelpers.GetTargetUserObject(userPrincipal), e);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "InvalidName", ErrorCategory.InvalidArgument, targetObject: LocalHelpers.GetTargetUserObject(userPrincipal)));
+                        }
+                        catch (System.Runtime.InteropServices.COMException e) when (e.ErrorCode == -2147022672)
+                        {
+                            var exc = new NameInUseException(NewName, LocalHelpers.GetTargetUserObject(userPrincipal), e);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "NameInUse", ErrorCategory.InvalidArgument, targetObject: LocalHelpers.GetTargetUserObject(userPrincipal)));
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -228,6 +240,18 @@ namespace Microsoft.PowerShell.Commands
 
                             ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: LocalHelpers.GetTargetUserObject(userPrincipal)));
                         }
+                        catch (System.Runtime.InteropServices.COMException e) when (e.ErrorCode == -2147022694)
+                        {
+                            var exc = new InvalidNameException(NewName, LocalHelpers.GetTargetUserObject(userPrincipal), e);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "InvalidName", ErrorCategory.InvalidArgument, targetObject: LocalHelpers.GetTargetUserObject(userPrincipal)));
+                        }
+                        catch (System.Runtime.InteropServices.COMException e) when (e.ErrorCode == -2147022672)
+                        {
+                            var exc = new NameInUseException(NewName, LocalHelpers.GetTargetUserObject(userPrincipal), e);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "NameInUse", ErrorCategory.InvalidArgument, targetObject: LocalHelpers.GetTargetUserObject(userPrincipal)));
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -263,7 +287,7 @@ namespace Microsoft.PowerShell.Commands
         private bool _disposed;
 
         /// <summary>
-        /// Dispose the DisableLocalUserCommand.
+        /// Dispose the command.
         /// </summary>
         public void Dispose()
         {

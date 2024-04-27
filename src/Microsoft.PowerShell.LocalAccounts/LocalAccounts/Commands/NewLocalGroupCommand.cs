@@ -84,6 +84,12 @@ namespace Microsoft.PowerShell.Commands
 
                 ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: Name));
             }
+            catch (PrincipalOperationException e) when (e.ErrorCode == -2147022694)
+            {
+                var exc = new InvalidNameException(Name, Name, e);
+
+                WriteError(new ErrorRecord(exc, "InvalidName", ErrorCategory.ResourceExists, targetObject: Name));
+            }
             catch (PrincipalOperationException ex) when (ex.ErrorCode == -2147023517)
             {
                 var exc = new GroupExistsException(Name, Name);

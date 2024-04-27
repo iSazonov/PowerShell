@@ -167,6 +167,11 @@ namespace Microsoft.PowerShell.Commands
                         userPrincipal = user.SID is not null
                              ? UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, user.SID.Value)
                              : UserPrincipal.FindByIdentity(_principalContext, user.Name);
+
+                        if (userPrincipal is null)
+                        {
+                            WriteError(new ErrorRecord(new UserNotFoundException(Name, Name), "UserNotFound", ErrorCategory.ObjectNotFound, Name));
+                        }
                     }
                 }
                 else if (Name is not null)
@@ -271,7 +276,7 @@ namespace Microsoft.PowerShell.Commands
         private bool _disposed;
 
         /// <summary>
-        /// Dispose the DisableLocalUserCommand.
+        /// Dispose the command.
         /// </summary>
         public void Dispose()
         {

@@ -169,7 +169,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                     else
                     {
-                        WriteError(new ErrorRecord(new UserNotFoundException(sid.Value, sid ), "UserNotFound", ErrorCategory.ObjectNotFound, sid));
+                        WriteError(new ErrorRecord(new UserNotFoundException(sid.Value, sid), "UserNotFound", ErrorCategory.ObjectNotFound, sid));
                     }
                 }
                 catch (Exception ex)
@@ -184,7 +184,7 @@ namespace Microsoft.PowerShell.Commands
         private bool _disposed;
 
         /// <summary>
-        /// Dispose the DisableLocalUserCommand.
+        /// Dispose the command.
         /// </summary>
         public void Dispose()
         {

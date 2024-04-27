@@ -93,6 +93,11 @@ namespace Microsoft.PowerShell.Commands
                         groupPrincipal = group.SID is not null
                             ? GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, group.SID.Value)
                             : GroupPrincipal.FindByIdentity(_principalContext, group.Name);
+
+                        if (groupPrincipal is null)
+                        {
+                            WriteError(new ErrorRecord(new GroupNotFoundException(Name, Name), "GroupNotFound", ErrorCategory.ObjectNotFound, Name));
+                        }
                     }
                 }
                 else if (Name is not null)
@@ -100,11 +105,22 @@ namespace Microsoft.PowerShell.Commands
                     if (CheckShouldProcess(Name))
                     {
                         groupPrincipal = GroupPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, Name);
+
+                        if (groupPrincipal is null)
+                        {
+                            WriteError(new ErrorRecord(new GroupNotFoundException(Name, Name), "GroupNotFound", ErrorCategory.ObjectNotFound, Name));
+                        }
                     }
                 }
                 else if (SID is not null)
                 {
                     groupPrincipal = GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, SID.Value);
+
+                    if (groupPrincipal is null)
+                    {
+                        WriteError(new ErrorRecord(new GroupNotFoundException(SID.Value, SID), "GroupNotFound", ErrorCategory.ObjectNotFound, SID));
+                    }
+
                     if (groupPrincipal is not null && !CheckShouldProcess(groupPrincipal.Name))
                     {
                         groupPrincipal.Dispose();
@@ -146,7 +162,7 @@ namespace Microsoft.PowerShell.Commands
         private bool _disposed;
 
         /// <summary>
-        /// Dispose the DisableLocalUserCommand.
+        /// Dispose the command.
         /// </summary>
         public void Dispose()
         {

@@ -18,10 +18,16 @@ namespace Microsoft.PowerShell.Commands
     {
         #region Instance Data
         /// <summary>
-        /// The context used to search for users.
+        /// The context used to search for domain users.
         /// </summary>
         // Explicitly point a domain name of the computer otherwise a domain name of current user would be used by default.
-        internal protected PrincipalContext _principalContext = new PrincipalContext(ContextType.Domain, LocalHelpers.GetComputerDomainName());
+        internal protected PrincipalContext _principalDomainContext = new PrincipalContext(ContextType.Domain, LocalHelpers.GetComputerDomainName());
+
+        /// <summary>
+        /// The context used to search for local users.
+        /// </summary>
+        // Explicitly point a domain name of the computer otherwise a domain name of current user would be used by default.
+        internal protected PrincipalContext _principalMachineContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
 
         /// <summary>
         /// The group on which operations are performed.
@@ -111,7 +117,7 @@ namespace Microsoft.PowerShell.Commands
         private bool _disposed;
 
         /// <summary>
-        /// Dispose the DisableLocalUserCommand.
+        /// Dispose the command.
         /// </summary>
         public void Dispose()
         {
@@ -133,7 +139,8 @@ namespace Microsoft.PowerShell.Commands
                 {
                     _groupPrincipal?.Dispose();
                     _groupPrincipalContext?.Dispose();
-                    _principalContext?.Dispose();
+                    _principalDomainContext?.Dispose();
+                    _principalMachineContext?.Dispose();
                 }
 
                 _disposed = true;

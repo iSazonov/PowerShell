@@ -337,7 +337,7 @@ try {
             }
             else
             {
-                $result[0] -eq 1 | Should -BeTrue
+                $result[0] -eq 2 | Should -BeTrue
                 $result[1] -match "GroupNotFound" | Should -BeTrue
                 $result[2] -match "TestGroupGet1" | Should -BeTrue
             }

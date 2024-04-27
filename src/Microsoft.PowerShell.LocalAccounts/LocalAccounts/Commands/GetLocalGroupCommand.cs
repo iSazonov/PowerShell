@@ -104,6 +104,11 @@ namespace Microsoft.PowerShell.Commands
 
             foreach (string name in Name)
             {
+                if (name is null)
+                {
+                    continue;
+                }
+
                 try
                 {
                     if (WildcardPattern.ContainsWildcardCharacters(name))
@@ -127,13 +132,13 @@ namespace Microsoft.PowerShell.Commands
                         }
                         else
                         {
-                            WriteError(new ErrorRecord(new GroupNotFoundException(name, name), "UserNotFound", ErrorCategory.ObjectNotFound, name));
+                            WriteError(new ErrorRecord(new GroupNotFoundException(name, name), "GroupNotFound", ErrorCategory.ObjectNotFound, name));
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    WriteError(new ErrorRecord(ex, "InvalidLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup(name)));
+                    WriteError(new ErrorRecord(ex, "InvalidLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: name));
                 }
             }
         }
@@ -150,13 +155,26 @@ namespace Microsoft.PowerShell.Commands
 
             foreach (SecurityIdentifier sid in SID)
             {
+                if (sid is null)
+                {
+                    continue;
+                }
+
                 try
                 {
-                    WriteObject(LocalHelpers.GetMatchingLocalGroupsBySID(sid, _principalContext));
+                    LocalGroup? group = LocalHelpers.GetMatchingLocalGroupsBySID(sid, _principalContext);
+                    if (group is not null)
+                    {
+                        WriteObject(group);
+                    }
+                    else
+                    {
+                        WriteError(new ErrorRecord(new GroupNotFoundException(sid.Value, sid), "GroupNotFound", ErrorCategory.ObjectNotFound, sid));
+                    }
                 }
                 catch (Exception ex)
                 {
-                    WriteError(new ErrorRecord(ex, "InvalidLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: new LocalGroup() { SID = sid }));
+                    WriteError(new ErrorRecord(ex, "InvalidLocalGroupOperation", ErrorCategory.InvalidOperation, targetObject: sid));
                 }
             }
         }
@@ -166,7 +184,7 @@ namespace Microsoft.PowerShell.Commands
         private bool _disposed;
 
         /// <summary>
-        /// Dispose the DisableLocalUserCommand.
+        /// Dispose the command.
         /// </summary>
         public void Dispose()
         {
