@@ -153,6 +153,10 @@ namespace Microsoft.PowerShell.Commands
                             userPrincipal.Enabled = _ability;
                             userPrincipal.Save();
                         }
+                        else
+                        {
+                            WriteError(new ErrorRecord(new UserNotFoundException(sid.Value, sid), "UserNotFound", ErrorCategory.ObjectNotFound, sid));
+                        }
                     }
                 }
                 catch (UnauthorizedAccessException)

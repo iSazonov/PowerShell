@@ -57,8 +57,8 @@ namespace Microsoft.PowerShell.Commands
         }
         #endregion Public Properties
 
-        internal LocalAccountsException(string? message, object? target, ErrorCategory errorCategory)
-            : base(message)
+        internal LocalAccountsException(string? message, object? target, ErrorCategory errorCategory, Exception? ex = null)
+            : base(message, ex)
         {
             ErrorCategory = errorCategory;
             Target = target;
@@ -318,8 +318,8 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class InvalidNameException : LocalAccountsException
     {
-        internal InvalidNameException(string name, object? target)
-            : base(StringUtil.Format(Strings.InvalidName, name), target, ErrorCategory.InvalidArgument)
+        internal InvalidNameException(string name, object? target, Exception? ex)
+            : base(StringUtil.Format(Strings.InvalidName, name), target, ErrorCategory.InvalidArgument, ex)
         {
         }
 
@@ -351,8 +351,8 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class NameInUseException : LocalAccountsException
     {
-        internal NameInUseException(string name, object? target)
-            : base(StringUtil.Format(Strings.NameInUse, name), target, ErrorCategory.InvalidArgument)
+        internal NameInUseException(string name, object? target, Exception? ex = null)
+            : base(StringUtil.Format(Strings.NameInUse, name), target, ErrorCategory.InvalidArgument, ex)
         {
         }
 
@@ -551,8 +551,8 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class ObjectExistsException : LocalAccountsException
     {
-        internal ObjectExistsException(string? message, object? target)
-            : base(message, target, ErrorCategory.ResourceExists)
+        internal ObjectExistsException(string? message, object? target, Exception? ex = null)
+            : base(message, target, ErrorCategory.ResourceExists, ex)
         {
         }
 
@@ -617,8 +617,8 @@ namespace Microsoft.PowerShell.Commands
     /// </summary>
     public class UserExistsException : ObjectExistsException
     {
-        internal UserExistsException(string user, object? target)
-            : base(StringUtil.Format(Strings.UserExists, user), target)
+        internal UserExistsException(string user, object? target, Exception? ex)
+            : base(StringUtil.Format(Strings.UserExists, user), target, ex)
         {
         }
 

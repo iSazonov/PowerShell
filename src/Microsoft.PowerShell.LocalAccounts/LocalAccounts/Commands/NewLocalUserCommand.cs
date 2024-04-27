@@ -189,11 +189,19 @@ namespace Microsoft.PowerShell.Commands
 
                     if (NoPassword.IsPresent)
                     {
-                        // It is a breaking change.
-                        //  Windows PowerShell ignores a domain password policy and can create the account without password.
-                        //  AccountManagment API follows a domain password policy and can not create the account without password.
-                        userPrincipal.PasswordNotRequired = true;
-                        userPrincipal.Save();
+                        try
+                        {
+                            // It is a breaking change.
+                            //  Windows PowerShell ignores a domain password policy and can create the account without password.
+                            //  AccountManagment API follows a domain password policy and can not create the account without password.
+                            userPrincipal.PasswordNotRequired = true;
+                            userPrincipal.Save();
+                        }
+                        catch (PasswordException)
+                        {
+                            userPrincipal.SetPassword(LocalHelpers.GenerateRandomString());
+                            userPrincipal.Save();
+                        }
                     }
                     else
                     {
@@ -218,11 +226,17 @@ namespace Microsoft.PowerShell.Commands
 
                 ThrowTerminatingError(new ErrorRecord(exc, "InvalidPassword", ErrorCategory.InvalidData, targetObject: Password));
             }
-            catch (PrincipalExistsException)
+            catch (PrincipalOperationException e) when (e.ErrorCode == -2147022694)
+            {
+                var exc = new InvalidNameException(Name, Name, e);
+
+                WriteError(new ErrorRecord(exc, "InvalidName", ErrorCategory.ResourceExists, targetObject: Name));
+            }
+            catch (PrincipalExistsException e)
             {
                 // It is a breaking change.
                 // Windows PowerShell ignores the error and set password for exisisting user. This looks like Windows PowerShell bug.
-                var exc = new UserExistsException(Name, Name);
+                var exc = new UserExistsException(Name, Name, e);
 
                 WriteError(new ErrorRecord(exc, "UserExists", ErrorCategory.ResourceExists, targetObject: Name));
             }

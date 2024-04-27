@@ -6,6 +6,7 @@ using System;
 using System.DirectoryServices.AccountManagement;
 using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
+using System.Management.Automation.SecurityAccountsManager.Extensions;
 using System.Security.Principal;
 #endregion
 
@@ -116,7 +117,18 @@ namespace Microsoft.PowerShell.Commands
                     }
                     else
                     {
-                        WriteObject(LocalHelpers.GetMatchingLocalGroupsByName(name, _principalContext));
+                        SecurityIdentifier? sid = this.TrySid(name);
+                        LocalGroup? group = sid is null
+                            ? LocalHelpers.GetMatchingLocalGroupsByName(name, _principalContext)
+                            : LocalHelpers.GetMatchingLocalGroupsBySID(sid, _principalContext);
+                        if (group is not null)
+                        {
+                            WriteObject(group);
+                        }
+                        else
+                        {
+                            WriteError(new ErrorRecord(new GroupNotFoundException(name, name), "UserNotFound", ErrorCategory.ObjectNotFound, name));
+                        }
                     }
                 }
                 catch (Exception ex)

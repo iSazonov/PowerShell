@@ -123,9 +123,9 @@ internal static class LocalHelpers
         var localUser = new LocalUser()
         {
             AccountExpires = user.AccountExpirationDate,
-            Description = user.Description,
+            Description = user.Description ?? string.Empty,
             Enabled = user.Enabled ?? false,
-            FullName = user.DisplayName,
+            FullName = user.DisplayName ?? string.Empty,
             LastLogon = user.LastLogon,
             Name = user.Name,
             PasswordChangeableDate = passwordChangeableDate,
@@ -275,4 +275,50 @@ internal static class LocalHelpers
         PrincipalSource = Sam.GetPrincipalSource(user.Sid),
         SID = user.Sid,
     };
+
+    /// <summary>
+    /// Generate a string with random chars.
+    /// </summary>
+    /// <returns>
+    /// A string with random chars.
+    /// </returns>
+    internal static string GenerateRandomString()
+    {
+        const int ResultLength = 32;
+        const string CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+{}[]?<>.,\\";
+        char[] random;
+
+        while (true)
+        {
+            random = System.Security.Cryptography.RandomNumberGenerator.GetItems<char>(CHARACTERS, ResultLength);
+
+            if (!random.AsSpan().ContainsAny(s_specialChars))
+            {
+                continue;
+            }
+
+            if (random.AsSpan().IndexOfAnyInRange('0', '9') < 0)
+            {
+                continue;
+            }
+
+            if (random.AsSpan().IndexOfAnyInRange('A', 'Z') < 0)
+            {
+                continue;
+            }
+
+            if (random.AsSpan().IndexOfAnyInRange('a', 'z') < 0)
+            {
+                continue;
+            }
+
+            break;
+        }
+
+        string randomString = random.ToString() ?? throw new InvalidPasswordException();
+
+        return randomString;
+    }
+
+    private static readonly System.Buffers.SearchValues<char> s_specialChars = System.Buffers.SearchValues.Create("!@#$%^&*()-_=+{}[]?<>.,\\");
 }

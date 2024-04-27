@@ -129,6 +129,18 @@ namespace Microsoft.PowerShell.Commands
 
                             ThrowTerminatingError(new ErrorRecord(exc, "AccessDenied", ErrorCategory.PermissionDenied, targetObject: LocalHelpers.GetTargetUserObject(userPrincipal)));
                         }
+                        catch (System.Runtime.InteropServices.COMException e) when (e.ErrorCode == -2147022694)
+                        {
+                            var exc = new InvalidNameException(NewName, LocalHelpers.GetTargetUserObject(userPrincipal), e);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "InvalidName", ErrorCategory.InvalidArgument, targetObject: LocalHelpers.GetTargetUserObject(userPrincipal)));
+                        }
+                        catch (System.Runtime.InteropServices.COMException e) when (e.ErrorCode == -2147022672)
+                        {
+                            var exc = new NameInUseException(NewName, LocalHelpers.GetTargetUserObject(userPrincipal), e);
+
+                            ThrowTerminatingError(new ErrorRecord(exc, "NameInUse", ErrorCategory.InvalidArgument, targetObject: LocalHelpers.GetTargetUserObject(userPrincipal)));
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -197,7 +209,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     using UserPrincipal userPrincipal = user.SID is not null
                         ? UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, user.SID.Value)
-                        : UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, user.Name);
+                        : UserPrincipal.FindByIdentity(_principalContext, user.Name);
                     if (userPrincipal is null)
                     {
                         WriteError(new ErrorRecord(new UserNotFoundException(user.ToString(), user), "UserNotFound", ErrorCategory.ObjectNotFound, user));

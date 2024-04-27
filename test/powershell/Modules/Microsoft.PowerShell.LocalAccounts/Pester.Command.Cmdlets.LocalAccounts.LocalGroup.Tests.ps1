@@ -4,8 +4,6 @@
 # Module removed due to #4272
 # disabling tests
 
-return
-
 function RemoveTestGroups
 {
     param([string] $basename)

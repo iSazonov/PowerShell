@@ -201,7 +201,7 @@ namespace Microsoft.PowerShell.Commands
                     {
                         using UserPrincipal userPrincipal = user.SID is not null
                             ? UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, user.SID.Value)
-                            : UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, user.Name);
+                            : UserPrincipal.FindByIdentity(_principalContext, user.Name);
                         if (userPrincipal is null)
                         {
                             WriteError(new ErrorRecord(new UserNotFoundException(user.ToString(), user), "UserNotFound", ErrorCategory.ObjectNotFound, user));

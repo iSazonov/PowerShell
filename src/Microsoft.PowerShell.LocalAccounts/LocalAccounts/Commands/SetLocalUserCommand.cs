@@ -166,7 +166,7 @@ namespace Microsoft.PowerShell.Commands
                     {
                         userPrincipal = user.SID is not null
                              ? UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, user.SID.Value)
-                             : UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, user.Name);
+                             : UserPrincipal.FindByIdentity(_principalContext, user.Name);
                     }
                 }
                 else if (Name is not null)
@@ -174,13 +174,23 @@ namespace Microsoft.PowerShell.Commands
                     if (CheckShouldProcess(Name))
                     {
                         userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, Name);
+
+                        if (userPrincipal is null)
+                        {
+                            WriteError(new ErrorRecord(new UserNotFoundException(Name, Name), "UserNotFound", ErrorCategory.ObjectNotFound, Name));
+                        }
                     }
                 }
                 else if (SID is not null)
                 {
                     userPrincipal = UserPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, SID.Value);
 
-                    if (userPrincipal is not null && !CheckShouldProcess(SID.ToString()))
+                    if (userPrincipal is null)
+                    {
+                        WriteError(new ErrorRecord(new UserNotFoundException(SID.Value, SID), "UserNotFound", ErrorCategory.ObjectNotFound, SID));
+                    }
+
+                    if (!CheckShouldProcess(SID.ToString()))
                     {
                         userPrincipal = null;
                     }
@@ -210,7 +220,7 @@ namespace Microsoft.PowerShell.Commands
                                 break;
 
                             case "UserMayChangePassword":
-                                userPrincipal.UserCannotChangePassword = UserMayChangePassword;
+                                userPrincipal.UserCannotChangePassword = !UserMayChangePassword;
                                 break;
 
                             case "Password":

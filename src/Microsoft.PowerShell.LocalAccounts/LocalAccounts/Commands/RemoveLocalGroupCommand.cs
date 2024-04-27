@@ -204,7 +204,7 @@ namespace Microsoft.PowerShell.Commands
                     {
                         using GroupPrincipal groupPrincipal = group.SID is not null
                             ? GroupPrincipal.FindByIdentity(_principalContext, IdentityType.Sid, group.SID.Value)
-                            : GroupPrincipal.FindByIdentity(_principalContext, IdentityType.SamAccountName, group.Name);
+                            : GroupPrincipal.FindByIdentity(_principalContext, group.Name);
                         if (groupPrincipal is null)
                         {
                             WriteError(new ErrorRecord(new GroupNotFoundException(group.ToString()), "GroupNotFound", ErrorCategory.ObjectNotFound, group));

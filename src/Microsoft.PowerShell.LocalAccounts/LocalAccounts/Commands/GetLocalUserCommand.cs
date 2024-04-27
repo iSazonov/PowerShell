@@ -6,6 +6,7 @@ using System;
 using System.DirectoryServices.AccountManagement;
 using System.Management.Automation;
 using System.Management.Automation.SecurityAccountsManager;
+using System.Management.Automation.SecurityAccountsManager.Extensions;
 using System.Security.Principal;
 #endregion
 
@@ -121,12 +122,23 @@ namespace Microsoft.PowerShell.Commands
                     }
                     else
                     {
-                        WriteObject(LocalHelpers.GetMatchingLocalUsersByName(name, _principalContext));
+                        SecurityIdentifier? sid = this.TrySid(name);
+                        LocalUser? user = sid is null
+                            ? LocalHelpers.GetMatchingLocalUsersByName(name, _principalContext)
+                            : LocalHelpers.GetMatchingLocalUsersBySID(sid, _principalContext);
+                        if (user is not null)
+                        {
+                            WriteObject(user);
+                        }
+                        else
+                        {
+                            WriteError(new ErrorRecord(new UserNotFoundException(name, name), "UserNotFound", ErrorCategory.ObjectNotFound, name));
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser(name)));
+                    WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: name));
                 }
             }
         }
@@ -150,11 +162,19 @@ namespace Microsoft.PowerShell.Commands
 
                 try
                 {
-                    WriteObject(LocalHelpers.GetMatchingLocalUsersBySID(sid, _principalContext));
+                    LocalUser? user = LocalHelpers.GetMatchingLocalUsersBySID(sid, _principalContext);
+                    if (user is not null)
+                    {
+                        WriteObject(user);
+                    }
+                    else
+                    {
+                        WriteError(new ErrorRecord(new UserNotFoundException(sid.Value, sid ), "UserNotFound", ErrorCategory.ObjectNotFound, sid));
+                    }
                 }
                 catch (Exception ex)
                 {
-                    WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: new LocalUser() { SID = sid }));
+                    WriteError(new ErrorRecord(ex, "InvalidLocalUserOperation", ErrorCategory.InvalidOperation, targetObject: sid));
                 }
             }
         }

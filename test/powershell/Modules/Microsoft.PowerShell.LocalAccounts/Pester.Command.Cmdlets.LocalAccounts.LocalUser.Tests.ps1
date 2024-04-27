@@ -4,8 +4,6 @@
 # Module removed due to #4272
 # disabling tests
 
-return
-
 Set-Variable dateInFuture -Option Constant -Value "12/12/2036 09:00"
 Set-Variable dateInPast -Option Constant -Value "12/12/2010 09:00"
 Set-Variable dateInvalid -Option Constant -Value "12/12/2016 25:00"
@@ -375,7 +373,7 @@ try {
 
         It "Can set PasswordNeverExpires to create a user with null for PasswordExpires date" {
             #[SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Demo/doc/test secret.")]
-            $result = New-LocalUser TestUserNew1 -Password (ConvertTo-SecureString "p@ssw0rd" -AsPlainText -Force) -PasswordNeverExpires
+            $result = New-LocalUser TestUserNew1 -Password (ConvertTo-SecureString "DVY!#$(New-Guid)" -AsPlainText -Force) -PasswordNeverExpires
 
             $result.Name | Should -BeExactly TestUserNew1
             $result.PasswordExpires | Should -BeNullOrEmpty
@@ -493,8 +491,9 @@ try {
             Catch {
                 # Ignore the execption
             }
-            $outErr.Count -eq 1 | Should -BeTrue
+            $outErr.Count -eq 2 | Should -BeTrue
             $outErr[0].ErrorRecord.CategoryInfo.Reason -match "UserNotFound" | Should -BeTrue
+            $outErr[1].ErrorRecord.CategoryInfo.Reason -match "PipelineStoppedException" | Should -BeTrue
             $outOut.Name -match "TestUserGet1" | Should -BeTrue
         }
 
@@ -782,7 +781,7 @@ try {
 
         It 'Can use PasswordNeverExpires:$true to null a PasswordExpires date' {
             #[SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Demo/doc/test secret.")]
-            $user = New-LocalUser TestUserSet2 -Password (ConvertTo-SecureString "p@ssw0rd" -AsPlainText -Force)
+            $user = New-LocalUser TestUserSet2 -Password (ConvertTo-SecureString "DVY!#$(New-Guid)" -AsPlainText -Force)
             $user | Set-LocalUser -PasswordNeverExpires:$true
             $result = Get-LocalUser TestUserSet2
 
@@ -792,7 +791,7 @@ try {
 
         It 'Can use PasswordNeverExpires:$false to activate a PasswordExpires date' {
             #[SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Demo/doc/test secret.")]
-            $user = New-LocalUser TestUserSet2 -Password (ConvertTo-SecureString "p@ssw0rd" -AsPlainText -Force) -PasswordNeverExpires
+            $user = New-LocalUser TestUserSet2 -Password (ConvertTo-SecureString "DVY!#$(New-Guid)" -AsPlainText -Force) -PasswordNeverExpires
             $user | Set-LocalUser -PasswordNeverExpires:$false
             $result = Get-LocalUser TestUserSet2
 
@@ -1116,6 +1115,8 @@ try {
         }
 
         It "Can remove using -InputObject" {
+            $a=Get-LocalUser -SID $user1SID | Out-String
+            Write-Verbose $a
             $sb = {
                 $user = Get-LocalUser -SID $user1SID
                 $result = Remove-LocalUser -InputObject $user 2>&1
