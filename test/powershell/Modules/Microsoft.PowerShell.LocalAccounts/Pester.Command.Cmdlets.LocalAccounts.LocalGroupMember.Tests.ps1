@@ -4,8 +4,6 @@
 # Module removed due to #4272
 # disabling tests
 
-return
-
 function IsWin10OrHigher
 {
     $version = [system.environment]::osversion.version
@@ -162,7 +160,7 @@ try {
             $sb = {
                 Add-LocalGroupMember TestGroup1 TestGroup2
             }
-            VerifyFailingTest $sb "Internal,Microsoft.PowerShell.Commands.AddLocalGroupMemberCommand"
+            VerifyFailingTest $sb "InvalidLocalGroupMemberOperation,Microsoft.PowerShell.Commands.AddLocalGroupMemberCommand"
         }
 
         It "Can add array of members to group" {

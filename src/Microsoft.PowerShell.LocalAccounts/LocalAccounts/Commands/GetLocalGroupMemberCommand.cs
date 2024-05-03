@@ -42,6 +42,8 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
+            GetGroup();
+
             try
             {
                 IEnumerable<LocalPrincipal>? principals = ProcessesMembership(MakeLocalPrincipals(_groupPrincipal!));
@@ -153,7 +155,9 @@ namespace Microsoft.PowerShell.Commands
 
                 if (WildcardPattern.ContainsWildcardCharacters(Member))
                 {
-                    var pattern = new WildcardPattern(Member, WildcardOptions.Compiled | WildcardOptions.IgnoreCase);
+                    string name = Member.StartsWith('*') ? Member : '*' + Member;
+
+                    var pattern = new WildcardPattern(name, WildcardOptions.Compiled | WildcardOptions.IgnoreCase);
 
                     foreach (LocalPrincipal m in membership)
                     {
@@ -182,7 +186,7 @@ namespace Microsoft.PowerShell.Commands
                     {
                         foreach (LocalPrincipal m in membership)
                         {
-                            if (Member.Equals(m.Name, StringComparison.CurrentCultureIgnoreCase))
+                            if (m.Name is not null && m.Name.EndsWith(Member, StringComparison.CurrentCultureIgnoreCase))
                             {
                                 rv.Add(m);
                                 break;

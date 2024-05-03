@@ -21,21 +21,24 @@ namespace Microsoft.PowerShell.Commands
         /// The context used to search for domain users.
         /// </summary>
         // Explicitly point a domain name of the computer otherwise a domain name of current user would be used by default.
-        internal protected PrincipalContext _principalDomainContext = new PrincipalContext(ContextType.Domain, LocalHelpers.GetComputerDomainName());
+        protected internal  PrincipalContext _principalDomainContext = new PrincipalContext(ContextType.Domain, LocalHelpers.GetComputerDomainName());
 
         /// <summary>
         /// The context used to search for local users.
         /// </summary>
         // Explicitly point a domain name of the computer otherwise a domain name of current user would be used by default.
-        internal protected PrincipalContext _principalMachineContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
+        protected internal  PrincipalContext _principalMachineContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
 
         /// <summary>
         /// The group on which operations are performed.
         /// </summary>
-        internal protected GroupPrincipal? _groupPrincipal;
+        protected internal  GroupPrincipal? _groupPrincipal;
 
+        /// <summary>
+        /// The context used to search for local groups.
+        /// </summary>
         // Explicitly point DNS computer name to avoid very slow NetBIOS name resolutions.
-        private PrincipalContext _groupPrincipalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
+        protected internal  PrincipalContext _groupPrincipalContext = new PrincipalContext(ContextType.Machine, LocalHelpers.GetFullComputerName());
         #endregion Instance Data
 
         #region Parameter Properties
@@ -76,11 +79,8 @@ namespace Microsoft.PowerShell.Commands
         public SecurityIdentifier SID { get; set; } = null!;
         #endregion Parameter Properties
 
-        #region Cmdlet Overrides
-        /// <summary>
-        /// BeginProcessing method.
-        /// </summary>
-        protected override void BeginProcessing()
+        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(_groupPrincipal))]
+        internal void GetGroup()
         {
             try
             {
@@ -111,7 +111,6 @@ namespace Microsoft.PowerShell.Commands
                 ThrowTerminatingError(new ErrorRecord(new GroupNotFoundException(target.ToString(), target), "GroupNotFound", ErrorCategory.ObjectNotFound, target));
             }
         }
-        #endregion Cmdlet Overrides
 
         #region IDisposable interface
         private bool _disposed;

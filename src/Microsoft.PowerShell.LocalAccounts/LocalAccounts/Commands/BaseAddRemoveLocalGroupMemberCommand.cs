@@ -40,7 +40,8 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            Debug.Assert(_groupPrincipal is not null);
+            GetGroup();
+
             foreach (LocalPrincipal member in Member)
             {
                 if (member is null)
@@ -60,7 +61,11 @@ namespace Microsoft.PowerShell.Commands
                         }
                         else
                         {
-                            _groupPrincipal.Members.Remove(principal);
+                            if (!_groupPrincipal.Members.Remove(principal))
+                            {
+                                var exc = new MemberNotFoundException(member.ToString(), _groupPrincipal.Name);
+                                WriteError(new ErrorRecord(exc, "MemberNotFound", ErrorCategory.ObjectNotFound, targetObject: member.ToString()));
+                            }
                         }
 
                         _groupPrincipal.Save();
