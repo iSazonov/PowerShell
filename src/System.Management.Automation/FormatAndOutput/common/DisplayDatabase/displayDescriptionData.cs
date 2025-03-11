@@ -482,7 +482,6 @@ namespace Microsoft.PowerShell.Commands.Internal.Format
         // * end group footer
         // This can be done with defining a new Type called EndGroup with fields
         // such as stat and footer.
-
     }
 
     internal sealed class StartGroup

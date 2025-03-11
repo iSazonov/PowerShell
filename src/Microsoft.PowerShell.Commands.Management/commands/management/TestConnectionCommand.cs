@@ -671,7 +671,6 @@ namespace Microsoft.PowerShell.Commands
                         replyResult,
                         CurrentMTUSize));
                 }
-
             }
         }
 

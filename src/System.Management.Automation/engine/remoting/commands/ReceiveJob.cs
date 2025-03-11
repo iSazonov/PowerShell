@@ -377,7 +377,6 @@ namespace Microsoft.PowerShell.Commands
                                 List<Job> childJobs = remoteJob.GetJobsForRunspace(remoteRunspaceInfo);
                                 jobsToWrite.AddRange(childJobs);
                                 // WriteResultsForJobsInCollection(childJobs, false);
-
                             }
                         }
                     }
@@ -413,7 +412,6 @@ namespace Microsoft.PowerShell.Commands
                                 List<Job> childJobs = remoteJob.GetJobsForComputer(resolvedComputerName);
                                 jobsToWrite.AddRange(childJobs);
                                 // WriteResultsForJobsInCollection(childJobs, false);
-
                             }
                         }
                     }

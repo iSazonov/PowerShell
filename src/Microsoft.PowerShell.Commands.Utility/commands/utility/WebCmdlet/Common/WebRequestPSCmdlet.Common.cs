@@ -1310,7 +1310,6 @@ namespace Microsoft.PowerShell.Commands
                     {
                         throw;
                     }
-
                 }
                 if (handleRedirect
                     && _maximumRedirection is not 0

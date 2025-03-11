@@ -185,7 +185,6 @@ namespace System.Management.Automation
         /// Gets the native command's process ID.
         /// </summary>
         public int ProcessId { get; }
-
     }
     #nullable restore
 

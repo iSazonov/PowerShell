@@ -741,7 +741,6 @@ namespace Microsoft.PowerShell.Telemetry
             {
                 // Ignore errors.
             }
-
         }
 
         /// <summary>
