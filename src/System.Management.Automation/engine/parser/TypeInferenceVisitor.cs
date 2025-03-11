@@ -463,7 +463,7 @@ namespace System.Management.Automation
                 if (value != null)
                 {
                     var typeObject = value.GetType();
-                    
+
                     if (typeObject.FullName.Equals("System.Management.Automation.PSObject", StringComparison.Ordinal))
                     {
                         var psobjectPropertyList = new List<PSMemberNameAndType>();
@@ -484,7 +484,7 @@ namespace System.Management.Automation
                     {
                         type = new PSTypeName(typeObject);
                     }
-                    
+
                     return true;
                 }
             }
@@ -2708,7 +2708,7 @@ namespace System.Management.Automation
 
                         continue;
                     }
-                    
+
                     if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IList<>))
                     {
                         var valueType = type.GetGenericArguments()[0];

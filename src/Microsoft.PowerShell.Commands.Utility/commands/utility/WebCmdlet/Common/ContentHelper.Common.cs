@@ -133,7 +133,7 @@ namespace Microsoft.PowerShell.Commands
                        || contentType.Equals("application/xml-external-parsed-entity", StringComparison.OrdinalIgnoreCase)
                        || contentType.Equals("application/xml-dtd", StringComparison.OrdinalIgnoreCase)
                        || contentType.EndsWith("+xml", StringComparison.OrdinalIgnoreCase);
-            
+
             return isXml;
         }
 

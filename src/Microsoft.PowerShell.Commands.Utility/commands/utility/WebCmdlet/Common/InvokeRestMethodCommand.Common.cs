@@ -140,7 +140,7 @@ namespace Microsoft.PowerShell.Commands
 
                 responseStream.Position = 0;
             }
-            
+
             if (ShouldSaveToOutFile)
             {
                 string outFilePath = WebResponseHelper.GetOutFilePath(response, _qualifiedOutFile);
