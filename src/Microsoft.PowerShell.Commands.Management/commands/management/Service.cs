@@ -830,7 +830,7 @@ namespace Microsoft.PowerShell.Commands
         /// <param name="errorId">
         /// errorId for a nonterminating error if operation fails
         /// </param>
-        ///  <param name="errorMessage">
+        /// <param name="errorMessage">
         /// errorMessage for a nonterminating error if operation fails
         /// </param>
         /// <returns>True if action succeeded.</returns>

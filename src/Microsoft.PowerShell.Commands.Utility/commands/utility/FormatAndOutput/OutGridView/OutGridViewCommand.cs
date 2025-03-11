@@ -28,7 +28,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         Single,
         /// <summary>
-        ///Allow select of multiple items to be written to the pipeline.
+        /// Allow select of multiple items to be written to the pipeline.
         /// </summary>
         Multiple
     }
