@@ -192,7 +192,9 @@ namespace System.Management.Automation.Remoting
         private GCHandle _pluginSignalGCHandle;
         private GCHandle _pluginConnectGCHandle;
         private GCHandle _shutdownPluginGCHandle;
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         private GCHandle _WSManPluginOperationShutdownGCHandle;
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
 
         #endregion
 

@@ -145,7 +145,9 @@ namespace System.Management.Automation.Runspaces
             }
         }
 
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         private readonly string _PSSnapin = string.Empty;
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
         private readonly string _reason = string.Empty;
 
         /// <summary>

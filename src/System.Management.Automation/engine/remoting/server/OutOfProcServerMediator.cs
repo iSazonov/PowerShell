@@ -23,7 +23,9 @@ namespace System.Management.Automation.Remoting.Server
         protected OutOfProcessServerSessionTransportManager sessionTM;
         protected OutOfProcessUtils.DataProcessingDelegates callbacks;
 
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         protected static object SyncObject = new object();
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
         protected object _syncObject = new object();
         protected string _initialCommand;
         protected ManualResetEvent allcmdsClosedEvent;

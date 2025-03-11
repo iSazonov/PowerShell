@@ -6163,7 +6163,10 @@ namespace Microsoft.WSMan.Management
             }
         }
 
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         private bool _IsPortSpecified = false;
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
+
     }
 
     #endregion
@@ -6533,7 +6536,9 @@ $_ | Start-WSManServiceD15A7957836142a18627D7E1D342DD82 -force $args[0] -caption
             set { _SourceOfValue = value; }
         }
 
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         private object _SourceOfValue;
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
 
         /// <summary>
         /// Variable Value.

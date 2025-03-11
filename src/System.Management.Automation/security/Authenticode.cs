@@ -53,7 +53,9 @@ namespace System.Management.Automation
     /// </summary>
     internal static class SignatureHelper
     {
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         private static Guid WINTRUST_ACTION_GENERIC_VERIFY_V2 = new Guid("00AAC56B-CD44-11d0-8CC2-00C04FC295EE");
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
 
         /// <summary>
         /// Tracer for SignatureHelper.

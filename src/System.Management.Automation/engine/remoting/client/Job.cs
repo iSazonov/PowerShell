@@ -3824,8 +3824,10 @@ namespace System.Management.Automation
         // helper associated with this job object
         private readonly RemotePipeline _remotePipeline = null;
 
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         // object used for synchronization
         protected object SyncObject = new object();
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
 
         private ThrottleManager _throttleManager;
         private bool _stopIsCalled = false;

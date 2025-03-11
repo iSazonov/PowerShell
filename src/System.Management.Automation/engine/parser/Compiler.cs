@@ -1934,7 +1934,9 @@ namespace System.Management.Automation.Language
 
             private Func<FunctionContext, object> _delegate;
             private IScriptExtent[] _sequencePoints;
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
             private Type LocalsTupleType;
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
 
             internal object GetValue(ExecutionContext context, SessionStateInternal sessionStateInternal, IDictionary usingValues = null)
             {

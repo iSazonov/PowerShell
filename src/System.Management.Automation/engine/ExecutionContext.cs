@@ -722,7 +722,9 @@ namespace System.Management.Automation
         {
             private readonly bool _stepScript;
             private readonly bool _ignoreScriptDebug;
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
             private readonly int _PSDebug;
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
 
             private readonly Pipe _shellFunctionErrorOutputPipe;
 

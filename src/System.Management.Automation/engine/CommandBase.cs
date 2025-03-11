@@ -108,7 +108,9 @@ namespace System.Management.Automation.Internal
             get { return _CBhost; }
         }
 
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         private PSHost _CBhost;
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
 
         /// <summary>
         /// Internal helper to get to SessionState.

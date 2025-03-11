@@ -191,7 +191,9 @@ namespace Microsoft.PowerShell.Commands
             set { _ClrVersion = value; }
         }
 
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         private Version _ClrVersion = null;
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
 
         /// <summary>
         /// Gets or sets the version of .NET Framework required by the module.
@@ -204,7 +206,9 @@ namespace Microsoft.PowerShell.Commands
             set { _DotNetFrameworkVersion = value; }
         }
 
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         private Version _DotNetFrameworkVersion = null;
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
 
         /// <summary>
         /// Gets or sets the name of PowerShell host required by the module.
@@ -217,7 +221,9 @@ namespace Microsoft.PowerShell.Commands
             set { _PowerShellHostName = value; }
         }
 
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         private string _PowerShellHostName = null;
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
 
         /// <summary>
         /// Gets or sets the version of PowerShell host required by the module.
@@ -230,7 +236,9 @@ namespace Microsoft.PowerShell.Commands
             set { _PowerShellHostVersion = value; }
         }
 
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         private Version _PowerShellHostVersion = null;
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
 
         /// <summary>
         /// Gets or sets the list of Dependencies for the module.

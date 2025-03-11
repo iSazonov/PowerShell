@@ -265,7 +265,9 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         private string _Algorithm = HashAlgorithmNames.SHA256;
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
 
         /// <summary>
         /// Hash algorithm names.

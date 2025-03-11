@@ -451,7 +451,9 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         private string[] _PSSnapins = Array.Empty<string>();
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
         internal bool IsModuleSpecified = false;
         /// <summary>
         /// Gets or sets the FullyQualifiedModule parameter to the cmdlet.

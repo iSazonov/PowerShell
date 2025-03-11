@@ -85,7 +85,9 @@ namespace System.Management.Automation.Runspaces
             _errorRecord = new ErrorRecord(new ParentContainsErrorRecordException(this), "ConsoleLoadFailure", ErrorCategory.ResourceUnavailable, null);
         }
 
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
         private readonly Collection<PSSnapInException> _PSSnapInExceptions = new Collection<PSSnapInException>();
+#pragma warning restore SA1306 // Field names should begin with lower-case letter
 
         internal Collection<PSSnapInException> PSSnapInExceptions
         {
