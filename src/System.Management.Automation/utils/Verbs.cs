@@ -1503,7 +1503,6 @@ namespace System.Management.Automation
                     {
                         groups = new string[] { groupParameterValue.ToString() };
                     }
-
                     else if (groupParameterValueType.IsArray
                              && groupParameterValueType.GetElementType() == typeof(object))
                     {

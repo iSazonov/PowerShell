@@ -1518,7 +1518,6 @@ namespace Microsoft.PowerShell
             for (int i = 0; i < lines; ++i)
             {
                 Console.Out.Write('\n');
-
             }
         }
 
